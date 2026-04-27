@@ -19,10 +19,23 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/produtos', produtosRoutes);
 app.use('/api/validades', validadesRoutes);
 
-// Rota para disparar alerta manualmente (via cron externo ou teste)
+// Dispara alerta via GET (fácil de testar no navegador)
+// Exemplo: /api/alertas/slack/testar?key=SUA_SENHA
+app.get('/api/alertas/slack/testar', async (req, res) => {
+  if (req.query.key !== process.env.ALERTA_SECRET) {
+    return res.status(401).send('Não autorizado.');
+  }
+  try {
+    await enviarAlertaSlack();
+    res.send('✅ Alerta enviado! Verifique o Slack.');
+  } catch (err) {
+    res.status(500).send('❌ Erro: ' + err.message);
+  }
+});
+
+// Dispara alerta via POST (para cron externo como cron-job.org)
 app.post('/api/alertas/slack', async (req, res) => {
-  const chave = req.headers['x-alerta-key'];
-  if (chave !== process.env.ALERTA_SECRET) {
+  if (req.headers['x-alerta-key'] !== process.env.ALERTA_SECRET) {
     return res.status(401).json({ erro: 'Não autorizado.' });
   }
   await enviarAlertaSlack();
