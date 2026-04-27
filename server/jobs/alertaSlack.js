@@ -145,14 +145,14 @@ async function enviarAlertaSlack() {
 // ── Cron: todo dia às 8h (Maceió, UTC-3) ──────────────────────────────
 function iniciarJobSlack() {
   cron.schedule(
-    '0 8 * * *',
+    '0 8 * * 1',
     () => {
-      console.log('[Slack] Executando verificação diária...');
+      console.log('[Slack] Executando verificação semanal...');
       enviarAlertaSlack().catch(err => console.error('[Slack] Erro no job:', err.message));
     },
     { timezone: 'America/Maceio' }
   );
-  console.log('[Slack] Job agendado — alertas todo dia às 8h (Maceió).');
+  console.log('[Slack] Job agendado — alertas toda segunda-feira às 8h (Maceió).');
 }
 
 module.exports = { iniciarJobSlack, enviarAlertaSlack };
