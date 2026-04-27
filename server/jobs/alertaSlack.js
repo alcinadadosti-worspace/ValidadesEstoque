@@ -1,13 +1,13 @@
-const cron = require('node-cron');
+const cron  = require('node-cron');
 const axios = require('axios');
 
-// Calcula dias restantes para um Firestore Timestamp
+// ── Helpers ────────────────────────────────────────────────────────────
 function diasRestantes(timestamp) {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
-  const validade = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-  validade.setHours(0, 0, 0, 0);
-  return Math.round((validade - hoje) / (1000 * 60 * 60 * 24));
+  const v = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  v.setHours(0, 0, 0, 0);
+  return Math.round((v - hoje) / (1000 * 60 * 60 * 24));
 }
 
 function formatarMes(timestamp) {
@@ -15,23 +15,53 @@ function formatarMes(timestamp) {
   return d.toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' });
 }
 
-// Monta e envia a mensagem no Slack via Incoming Webhook
-async function enviarAlertaSlack() {
-  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
-  const appUrl     = process.env.APP_URL || 'https://validades.onrender.com';
-  const diasLimite = parseInt(process.env.SLACK_DIAS_ALERTA || '60', 10); // padrão: 2 meses
+// ── Envio via Slack Web API (DM para cada destinatário) ────────────────
+async function enviarMensagemSlack(blocks) {
+  const botToken     = process.env.SLACK_BOT_TOKEN;
+  const destinatarios = process.env.SLACK_DESTINATARIOS; // IDs separados por vírgula
 
-  if (!webhookUrl) {
-    console.log('[Slack] SLACK_WEBHOOK_URL não definido — alerta ignorado.');
+  if (!botToken || !destinatarios) {
+    console.log('[Slack] SLACK_BOT_TOKEN ou SLACK_DESTINATARIOS não configurados.');
     return;
   }
+
+  const ids = destinatarios.split(',').map(id => id.trim()).filter(Boolean);
+
+  for (const userId of ids) {
+    try {
+      const res = await axios.post(
+        'https://slack.com/api/chat.postMessage',
+        { channel: userId, blocks },
+        {
+          headers: {
+            Authorization: `Bearer ${botToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!res.data.ok) {
+        console.error(`[Slack] Erro ao enviar para ${userId}:`, res.data.error);
+      } else {
+        console.log(`[Slack] Mensagem enviada para ${userId}.`);
+      }
+    } catch (err) {
+      console.error(`[Slack] Falha HTTP ao enviar para ${userId}:`, err.message);
+    }
+  }
+}
+
+// ── Monta o payload e chama o envio ────────────────────────────────────
+async function enviarAlertaSlack() {
+  const appUrl     = process.env.APP_URL || 'https://validades.onrender.com';
+  const diasLimite = parseInt(process.env.SLACK_DIAS_ALERTA || '60', 10);
 
   let db;
   try {
     const { getDb } = require('../lib/firebase-admin');
     db = getDb();
   } catch (err) {
-    console.error('[Slack] Erro ao conectar ao Firestore:', err.message);
+    console.error('[Slack] Firestore indisponível:', err.message);
     return;
   }
 
@@ -39,28 +69,21 @@ async function enviarAlertaSlack() {
     const snap = await db.collection('validades').get();
 
     const emAlerta = [];
-    snap.forEach(docSnap => {
-      const d = docSnap.data();
+    snap.forEach(doc => {
+      const d = doc.data();
       if (!d.dataValidade) return;
       const dias = diasRestantes(d.dataValidade);
-      if (dias >= 0 && dias <= diasLimite) {
-        emAlerta.push({ ...d, id: docSnap.id, dias });
-      }
+      if (dias >= 0 && dias <= diasLimite) emAlerta.push({ ...d, id: doc.id, dias });
     });
 
     if (emAlerta.length === 0) {
-      console.log('[Slack] Nenhum item dentro do prazo de alerta — mensagem não enviada.');
+      console.log('[Slack] Nenhum item em alerta — mensagem não enviada.');
       return;
     }
 
-    // Ordena: mais próximos primeiro
     emAlerta.sort((a, b) => a.dias - b.dias);
 
-    const emoji = (dias) => {
-      if (dias === 0) return '💀';
-      if (dias <= 30) return '🚨';
-      return '⚠️';
-    };
+    const emojiDias = (d) => (d === 0 ? '💀' : d <= 30 ? '🚨' : '⚠️');
 
     const blocks = [
       {
@@ -77,19 +100,21 @@ async function enviarAlertaSlack() {
       { type: 'divider' },
     ];
 
-    // Até 20 itens no Slack (limite de blocos)
     emAlerta.slice(0, 20).forEach(item => {
       const diasTexto = item.dias === 0
         ? '*vence hoje!*'
         : `*${item.dias} dia(s)* restantes`;
-      const unidadeTexto = item.unidade ? ` · ${item.unidade === 'Matriz' ? '🏬 Matriz' : '🏪 Filial'}` : '';
+      const unidadeLabel = item.unidade
+        ? ` · ${item.unidade === 'Matriz' ? '🏬 Matriz' : '🏪 Filial'}`
+        : '';
+
       blocks.push({
         type: 'section',
         text: {
           type: 'mrkdwn',
           text: [
-            `${emoji(item.dias)} *${item.nome}*`,
-            `SKU: \`${item.sku}\` · 📦 ${item.quantidade || 1} un. · 📅 ${formatarMes(item.dataValidade)}${unidadeTexto}`,
+            `${emojiDias(item.dias)} *${item.nome}*`,
+            `SKU: \`${item.sku}\` · 📦 ${item.quantidade || 1} un. · 📅 ${formatarMes(item.dataValidade)}${unidadeLabel}`,
             `→ ${diasTexto}`,
           ].join('\n'),
         },
@@ -116,19 +141,18 @@ async function enviarAlertaSlack() {
       ],
     });
 
-    await axios.post(webhookUrl, { blocks });
-    console.log(`[Slack] Alerta enviado — ${emAlerta.length} item(ns) em alerta.`);
+    await enviarMensagemSlack(blocks);
   } catch (err) {
-    console.error('[Slack] Erro ao enviar alerta:', err.message);
+    console.error('[Slack] Erro ao montar alerta:', err.message);
   }
 }
 
-// Inicia o cron job: todo dia às 8h (horário de Maceió, UTC-3)
+// ── Cron: todo dia às 8h (Maceió, UTC-3) ──────────────────────────────
 function iniciarJobSlack() {
   cron.schedule(
     '0 8 * * *',
     () => {
-      console.log('[Slack] Verificando validades para alerta diário...');
+      console.log('[Slack] Executando verificação diária de validades...');
       enviarAlertaSlack();
     },
     { timezone: 'America/Maceio' }
