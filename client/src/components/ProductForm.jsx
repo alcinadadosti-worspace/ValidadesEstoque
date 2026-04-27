@@ -162,36 +162,38 @@ export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvan
           </>
         )}
 
-        {/* Unidade — sempre pergunta, independente do produto */}
-        <div style={{ marginBottom: '14px' }}>
-          <label style={{ display: 'block', fontFamily: "'Kalam', cursive", fontSize: '15px', marginBottom: '6px' }}>
-            🏪 Cadastrar em qual unidade? *
-          </label>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            {['Matriz', 'Filial'].map(u => (
-              <button
-                key={u}
-                type="button"
-                onClick={() => setUnidadeItem(u)}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  fontFamily: "'Kalam', cursive",
-                  fontSize: '16px',
-                  background: unidadeItem === u ? '#2d5da1' : '#fff',
-                  color: unidadeItem === u ? '#fff' : '#2d5da1',
-                  border: '2px solid #2d5da1',
-                  borderRadius: '255px 8px 225px 8px / 8px 225px 8px 255px',
-                  boxShadow: unidadeItem === u ? '1px 1px 0 0 #2d5da1' : '3px 3px 0 0 #2d5da1',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {u === 'Matriz' ? '🏬' : '🏪'} {u}
-              </button>
-            ))}
+        {/* Unidade — só pergunta quando está visualizando as duas unidades */}
+        {unidade === 'Ambas' && (
+          <div style={{ marginBottom: '14px' }}>
+            <label style={{ display: 'block', fontFamily: "'Kalam', cursive", fontSize: '15px', marginBottom: '6px' }}>
+              🏪 Cadastrar em qual unidade? *
+            </label>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              {['Matriz', 'Filial'].map(u => (
+                <button
+                  key={u}
+                  type="button"
+                  onClick={() => setUnidadeItem(u)}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    fontFamily: "'Kalam', cursive",
+                    fontSize: '16px',
+                    background: unidadeItem === u ? '#2d5da1' : '#fff',
+                    color: unidadeItem === u ? '#fff' : '#2d5da1',
+                    border: '2px solid #2d5da1',
+                    borderRadius: '255px 8px 225px 8px / 8px 225px 8px 255px',
+                    boxShadow: unidadeItem === u ? '1px 1px 0 0 #2d5da1' : '3px 3px 0 0 #2d5da1',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {u === 'Matriz' ? '🏬' : '🏪'} {u}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Quantidade */}
         <div style={{ marginBottom: '14px' }}>
