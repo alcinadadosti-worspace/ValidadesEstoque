@@ -7,9 +7,9 @@ export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvan
   const [marca, setMarca] = useState(produto?.marca || MARCAS[0]);
   const [dataValidade, setDataValidade] = useState('');
   const [quantidade, setQuantidade] = useState(1);
-  // Unidade do item: se unidade global não for "Ambas", usa ela; senão o usuário escolhe
+  // Sempre inicia com a unidade atual como padrão, mas o usuário pode trocar
   const [unidadeItem, setUnidadeItem] = useState(
-    unidade !== 'Ambas' ? unidade : 'Matriz'
+    unidade === 'Ambas' ? 'Matriz' : unidade
   );
   const [erros, setErros] = useState({});
 
@@ -159,40 +159,39 @@ export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvan
               </select>
             </div>
 
-            {/* Unidade — só pergunta se estiver vendo as duas */}
-            {unidade === 'Ambas' && (
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontFamily: "'Kalam', cursive", fontSize: '15px', marginBottom: '6px' }}>
-                  🏪 Cadastrar em qual unidade? *
-                </label>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  {['Matriz', 'Filial'].map(u => (
-                    <button
-                      key={u}
-                      type="button"
-                      onClick={() => setUnidadeItem(u)}
-                      style={{
-                        flex: 1,
-                        padding: '10px',
-                        fontFamily: "'Kalam', cursive",
-                        fontSize: '16px',
-                        background: unidadeItem === u ? '#2d5da1' : '#fff',
-                        color: unidadeItem === u ? '#fff' : '#2d5da1',
-                        border: '2px solid #2d5da1',
-                        borderRadius: '255px 8px 225px 8px / 8px 225px 8px 255px',
-                        boxShadow: unidadeItem === u ? '1px 1px 0 0 #2d5da1' : '3px 3px 0 0 #2d5da1',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s',
-                      }}
-                    >
-                      {u === 'Matriz' ? '🏬' : '🏪'} {u}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </>
         )}
+
+        {/* Unidade — sempre pergunta, independente do produto */}
+        <div style={{ marginBottom: '14px' }}>
+          <label style={{ display: 'block', fontFamily: "'Kalam', cursive", fontSize: '15px', marginBottom: '6px' }}>
+            🏪 Cadastrar em qual unidade? *
+          </label>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {['Matriz', 'Filial'].map(u => (
+              <button
+                key={u}
+                type="button"
+                onClick={() => setUnidadeItem(u)}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  fontFamily: "'Kalam', cursive",
+                  fontSize: '16px',
+                  background: unidadeItem === u ? '#2d5da1' : '#fff',
+                  color: unidadeItem === u ? '#fff' : '#2d5da1',
+                  border: '2px solid #2d5da1',
+                  borderRadius: '255px 8px 225px 8px / 8px 225px 8px 255px',
+                  boxShadow: unidadeItem === u ? '1px 1px 0 0 #2d5da1' : '3px 3px 0 0 #2d5da1',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {u === 'Matriz' ? '🏬' : '🏪'} {u}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Quantidade */}
         <div style={{ marginBottom: '14px' }}>
@@ -232,12 +231,6 @@ export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvan
           )}
         </div>
 
-        {/* Unidade atual (informativo — quando não é "Ambas") */}
-        {unidade !== 'Ambas' && (
-          <p style={{ fontFamily: "'Patrick Hand', cursive", fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>
-            🏪 Será cadastrado em: <strong>{unidade}</strong>
-          </p>
-        )}
 
         {/* Botões */}
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
