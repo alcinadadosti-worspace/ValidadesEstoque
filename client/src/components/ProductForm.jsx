@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { MARCAS, MARCA_CORES } from '../lib/validadeUtils';
 
-// Formulário de registro de validade:
-// - Produto existente: exibe nome + marca + solicita apenas a data
-// - Produto novo: solicita nome, marca e data
-export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvando }) {
-  const hoje = new Date().toISOString().split('T')[0];
-
+// Formulário de registro de validade com suporte a quantidade e unidade
+export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvando, unidade }) {
   const [nome, setNome] = useState(produto?.nome || '');
   const [marca, setMarca] = useState(produto?.marca || MARCAS[0]);
   const [dataValidade, setDataValidade] = useState('');
+  const [quantidade, setQuantidade] = useState(1);
+  // Unidade do item: se unidade global não for "Ambas", usa ela; senão o usuário escolhe
+  const [unidadeItem, setUnidadeItem] = useState(
+    unidade !== 'Ambas' ? unidade : 'Matriz'
+  );
   const [erros, setErros] = useState({});
 
   const produtoExistente = !!produto;
@@ -18,6 +19,7 @@ export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvan
     const e = {};
     if (!produtoExistente && !nome.trim()) e.nome = 'Nome obrigatório';
     if (!dataValidade) e.dataValidade = 'Data de validade obrigatória';
+    if (!quantidade || quantidade < 1) e.quantidade = 'Quantidade mínima é 1';
     setErros(e);
     return Object.keys(e).length === 0;
   };
@@ -31,11 +33,11 @@ export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvan
       nome: produtoExistente ? produto.nome : nome.trim(),
       marca: produtoExistente ? produto.marca : marca,
       dataValidade,
+      quantidade: Number(quantidade),
+      unidade: unidadeItem,
       produtoNovo: !produtoExistente,
     });
   };
-
-  const corMarca = MARCA_CORES[produto?.marca || marca] || { bg: '#f3f4f6', border: '#2d2d2d', texto: '#2d2d2d' };
 
   const estiloInput = (temErro) => ({
     width: '100%',
@@ -48,6 +50,8 @@ export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvan
     background: '#fff',
     outline: 'none',
   });
+
+  const corMarca = MARCA_CORES[produto?.marca || marca] || { bg: '#f3f4f6', border: '#2d2d2d', texto: '#2d2d2d' };
 
   return (
     <div
@@ -62,7 +66,7 @@ export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvan
         position: 'relative',
       }}
     >
-      {/* Fita adesiva decorativa */}
+      {/* Fita adesiva */}
       <div
         style={{
           position: 'absolute',
@@ -77,31 +81,15 @@ export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvan
       />
 
       <form onSubmit={handleSubmit}>
-        {/* SKU Badge */}
+        {/* SKU */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-          <span
-            style={{
-              fontFamily: "'Kalam', cursive",
-              fontSize: '13px',
-              color: '#6b7280',
-            }}
-          >
-            SKU:
-          </span>
-          <span
-            style={{
-              fontFamily: "'Kalam', cursive",
-              fontSize: '22px',
-              fontWeight: 700,
-              color: '#2d5da1',
-              letterSpacing: '2px',
-            }}
-          >
+          <span style={{ fontFamily: "'Kalam', cursive", fontSize: '13px', color: '#6b7280' }}>SKU:</span>
+          <span style={{ fontFamily: "'Kalam', cursive", fontSize: '22px', fontWeight: 700, color: '#2d5da1', letterSpacing: '2px' }}>
             {sku}
           </span>
         </div>
 
-        {/* Produto encontrado: exibe card informativo */}
+        {/* Produto encontrado */}
         {produtoExistente && (
           <div
             style={{
@@ -131,100 +119,104 @@ export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvan
                 {produto.marca}
               </span>
             </div>
-            <p
-              style={{
-                fontFamily: "'Kalam', cursive",
-                fontSize: '18px',
-                marginTop: '6px',
-                color: '#2d2d2d',
-              }}
-            >
+            <p style={{ fontFamily: "'Kalam', cursive", fontSize: '18px', marginTop: '6px', color: '#2d2d2d' }}>
               {produto.nome}
             </p>
           </div>
         )}
 
-        {/* Formulário completo para produto novo */}
+        {/* Campos para produto novo */}
         {!produtoExistente && (
           <>
-            <p
-              style={{
-                fontFamily: "'Patrick Hand', cursive",
-                fontSize: '14px',
-                color: '#f97316',
-                marginBottom: '16px',
-              }}
-            >
-              ⚠️ Produto não encontrado no cadastro. Preencha os dados:
+            <p style={{ fontFamily: "'Patrick Hand', cursive", fontSize: '14px', color: '#f97316', marginBottom: '16px' }}>
+              ⚠️ Produto não encontrado. Preencha os dados:
             </p>
 
-            {/* Campo Nome */}
             <div style={{ marginBottom: '14px' }}>
-              <label
-                style={{
-                  display: 'block',
-                  fontFamily: "'Kalam', cursive",
-                  fontSize: '15px',
-                  marginBottom: '6px',
-                }}
-              >
+              <label style={{ display: 'block', fontFamily: "'Kalam', cursive", fontSize: '15px', marginBottom: '6px' }}>
                 Nome do produto *
               </label>
               <input
                 type="text"
                 value={nome}
                 onChange={e => setNome(e.target.value)}
-                placeholder="Ex: O Boticário Body Splash..."
+                placeholder="Ex: Body Splash..."
                 style={estiloInput(!!erros.nome)}
               />
-              {erros.nome && (
-                <span style={{ fontFamily: "'Patrick Hand', cursive", color: '#ef4444', fontSize: '12px' }}>
-                  {erros.nome}
-                </span>
-              )}
+              {erros.nome && <span style={{ fontFamily: "'Patrick Hand', cursive", color: '#ef4444', fontSize: '12px' }}>{erros.nome}</span>}
             </div>
 
-            {/* Campo Marca */}
             <div style={{ marginBottom: '14px' }}>
-              <label
-                style={{
-                  display: 'block',
-                  fontFamily: "'Kalam', cursive",
-                  fontSize: '15px',
-                  marginBottom: '6px',
-                }}
-              >
+              <label style={{ display: 'block', fontFamily: "'Kalam', cursive", fontSize: '15px', marginBottom: '6px' }}>
                 Marca *
               </label>
               <select
                 value={marca}
                 onChange={e => setMarca(e.target.value)}
-                style={{
-                  ...estiloInput(false),
-                  appearance: 'none',
-                  cursor: 'pointer',
-                }}
+                style={{ ...estiloInput(false), appearance: 'none', cursor: 'pointer' }}
               >
-                {MARCAS.map(m => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
+                {MARCAS.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
+
+            {/* Unidade — só pergunta se estiver vendo as duas */}
+            {unidade === 'Ambas' && (
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontFamily: "'Kalam', cursive", fontSize: '15px', marginBottom: '6px' }}>
+                  🏪 Cadastrar em qual unidade? *
+                </label>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  {['Matriz', 'Filial'].map(u => (
+                    <button
+                      key={u}
+                      type="button"
+                      onClick={() => setUnidadeItem(u)}
+                      style={{
+                        flex: 1,
+                        padding: '10px',
+                        fontFamily: "'Kalam', cursive",
+                        fontSize: '16px',
+                        background: unidadeItem === u ? '#2d5da1' : '#fff',
+                        color: unidadeItem === u ? '#fff' : '#2d5da1',
+                        border: '2px solid #2d5da1',
+                        borderRadius: '255px 8px 225px 8px / 8px 225px 8px 255px',
+                        boxShadow: unidadeItem === u ? '1px 1px 0 0 #2d5da1' : '3px 3px 0 0 #2d5da1',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {u === 'Matriz' ? '🏬' : '🏪'} {u}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
 
-        {/* Campo Data de Validade */}
+        {/* Quantidade */}
+        <div style={{ marginBottom: '14px' }}>
+          <label style={{ display: 'block', fontFamily: "'Kalam', cursive", fontSize: '15px', marginBottom: '6px' }}>
+            📦 Quantidade de itens *
+          </label>
+          <input
+            type="number"
+            min="1"
+            max="9999"
+            value={quantidade}
+            onChange={e => setQuantidade(e.target.value)}
+            style={estiloInput(!!erros.quantidade)}
+          />
+          {erros.quantidade && (
+            <span style={{ fontFamily: "'Patrick Hand', cursive", color: '#ef4444', fontSize: '12px' }}>
+              {erros.quantidade}
+            </span>
+          )}
+        </div>
+
+        {/* Data de validade */}
         <div style={{ marginBottom: '20px' }}>
-          <label
-            style={{
-              display: 'block',
-              fontFamily: "'Kalam', cursive",
-              fontSize: '15px',
-              marginBottom: '6px',
-            }}
-          >
+          <label style={{ display: 'block', fontFamily: "'Kalam', cursive", fontSize: '15px', marginBottom: '6px' }}>
             📅 Data de Validade *
           </label>
           <input
@@ -239,6 +231,13 @@ export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvan
             </span>
           )}
         </div>
+
+        {/* Unidade atual (informativo — quando não é "Ambas") */}
+        {unidade !== 'Ambas' && (
+          <p style={{ fontFamily: "'Patrick Hand', cursive", fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>
+            🏪 Será cadastrado em: <strong>{unidade}</strong>
+          </p>
+        )}
 
         {/* Botões */}
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
@@ -258,7 +257,6 @@ export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvan
           >
             Cancelar
           </button>
-
           <button
             type="submit"
             disabled={salvando}
@@ -275,7 +273,7 @@ export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvan
               color: '#2d5da1',
             }}
           >
-            {salvando ? '⏳ Salvando...' : '💾 Salvar Validade'}
+            {salvando ? '⏳ Salvando...' : '💾 Salvar'}
           </button>
         </div>
       </form>

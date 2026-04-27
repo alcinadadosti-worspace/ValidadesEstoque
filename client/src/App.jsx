@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   collection,
   onSnapshot,
@@ -14,6 +14,8 @@ import {
 } from 'firebase/firestore';
 import { db } from './lib/firebase';
 
+import Login from './components/Login';
+import SelecionarUnidade from './components/SelecionarUnidade';
 import DashboardCards from './components/DashboardCards';
 import SKUInput from './components/SKUInput';
 import ProductForm from './components/ProductForm';
@@ -21,13 +23,17 @@ import ValidadeList from './components/ValidadeList';
 import BulkUpload from './components/BulkUpload';
 
 export default function App() {
-  // Estado global da aplicação
+  // Estado de autenticação e unidade (persistido em localStorage)
+  const [autenticado, setAutenticado] = useState(() => localStorage.getItem('auth') === 'true');
+  const [unidade, setUnidade] = useState(() => localStorage.getItem('unidade') || '');
+
+  // Dados do estoque
   const [validades, setValidades] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
-  // Estado do fluxo de entrada de produto
+  // Fluxo de cadastro de produto
   const [skuAtual, setSkuAtual] = useState('');
-  const [produtoAtual, setProdutoAtual] = useState(null); // null = aguardando, {} = encontrado, false = não encontrado
+  const [produtoAtual, setProdutoAtual] = useState(null);
   const [mostrarForm, setMostrarForm] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [enviandoLote, setEnviandoLote] = useState(false);
@@ -36,72 +42,98 @@ export default function App() {
   const [filtroMarca, setFiltroMarca] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('');
 
-  // Mensagem de feedback para o usuário
+  // Toast de feedback
   const [mensagem, setMensagem] = useState(null);
 
-  // Escuta em tempo real a coleção de validades no Firestore
+  // Escuta o Firestore apenas quando autenticado e com unidade selecionada
   useEffect(() => {
+    if (!autenticado || !unidade) return;
+
     const q = query(collection(db, 'validades'), orderBy('dataValidade', 'asc'));
     const unsub = onSnapshot(
       q,
-      (snap) => {
-        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setValidades(docs);
+      snap => {
+        setValidades(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         setCarregando(false);
       },
-      (err) => {
+      err => {
         console.error('Erro ao escutar validades:', err);
         setCarregando(false);
         mostrarMensagem('Erro ao carregar dados. Verifique a conexão.', 'erro');
       }
     );
     return () => unsub();
-  }, []);
+  }, [autenticado, unidade]);
 
-  // Exibe uma mensagem de feedback temporária (3 segundos)
   const mostrarMensagem = (texto, tipo = 'sucesso') => {
     setMensagem({ texto, tipo });
     setTimeout(() => setMensagem(null), 4000);
   };
 
-  // Callback quando produto é encontrado no Firestore
+  // Login
+  const handleLogin = () => {
+    localStorage.setItem('auth', 'true');
+    setAutenticado(true);
+  };
+
+  // Seleção de unidade
+  const handleSelecionarUnidade = (u) => {
+    localStorage.setItem('unidade', u);
+    setUnidade(u);
+  };
+
+  // Logout completo
+  const handleSair = () => {
+    localStorage.removeItem('auth');
+    localStorage.removeItem('unidade');
+    setAutenticado(false);
+    setUnidade('');
+    setValidades([]);
+    setMostrarForm(false);
+  };
+
+  // Trocar unidade sem fazer logout
+  const handleTrocarUnidade = () => {
+    localStorage.removeItem('unidade');
+    setUnidade('');
+    setMostrarForm(false);
+    setFiltroMarca('');
+    setFiltroStatus('');
+  };
+
   const handleProdutoEncontrado = (produto) => {
     setSkuAtual(produto.sku);
     setProdutoAtual(produto);
     setMostrarForm(true);
   };
 
-  // Callback quando produto NÃO é encontrado (precisa cadastrar)
   const handleNovoProduto = (sku) => {
     setSkuAtual(sku);
     setProdutoAtual(false);
     setMostrarForm(true);
   };
 
-  // Salva a validade (e o produto, se for novo)
-  const handleSalvar = async ({ sku, nome, marca, dataValidade, produtoNovo }) => {
+  const handleSalvar = async ({ sku, nome, marca, dataValidade, quantidade, unidade: unidadeItem, produtoNovo }) => {
     setSalvando(true);
     try {
-      // Se o produto é novo, persiste na coleção de produtos
       if (produtoNovo) {
         await setDoc(doc(db, 'produtos', sku), {
-          sku,
-          nome,
-          marca,
+          sku, nome, marca,
           criadoEm: serverTimestamp(),
         });
       }
 
-      // Registra a validade na coleção de validades
       await addDoc(collection(db, 'validades'), {
         sku,
         nome,
         marca,
+        quantidade: Number(quantidade) || 1,
+        unidade: unidadeItem,
         dataValidade: Timestamp.fromDate(new Date(dataValidade + 'T12:00:00')),
         registradoEm: serverTimestamp(),
       });
 
-      mostrarMensagem(`✅ Validade de "${nome}" registrada com sucesso!`);
+      mostrarMensagem(`✅ "${nome}" — ${quantidade} un. registrado em ${unidadeItem}!`);
       handleCancelar();
     } catch (err) {
       console.error('Erro ao salvar:', err);
@@ -111,14 +143,12 @@ export default function App() {
     }
   };
 
-  // Reseta o formulário de entrada
   const handleCancelar = () => {
     setMostrarForm(false);
     setSkuAtual('');
     setProdutoAtual(null);
   };
 
-  // Deleta um registro de validade (sem deletar o produto)
   const handleDeletar = async (id) => {
     try {
       await deleteDoc(doc(db, 'validades', id));
@@ -129,106 +159,151 @@ export default function App() {
     }
   };
 
-  // Processa upload em lote de planilha
   const handleBulkUpload = async (itens) => {
     setEnviandoLote(true);
     let importados = 0;
     let erros = 0;
+    const unidadeImport = unidade !== 'Ambas' ? unidade : 'Matriz';
 
     try {
       for (const { sku, dataValidade } of itens) {
         try {
-          // Tenta buscar o produto no Firestore
           const prodSnap = await getDoc(doc(db, 'produtos', sku));
           let nome, marca;
-
           if (prodSnap.exists()) {
             ({ nome, marca } = prodSnap.data());
           } else {
-            // Produto desconhecido: registra com dados genéricos para revisão posterior
             nome = `Produto SKU ${sku}`;
             marca = 'O Boticário';
           }
 
           await addDoc(collection(db, 'validades'), {
-            sku,
-            nome,
-            marca,
+            sku, nome, marca,
+            quantidade: 1,
+            unidade: unidadeImport,
             dataValidade: Timestamp.fromDate(new Date(dataValidade + 'T12:00:00')),
             registradoEm: serverTimestamp(),
           });
           importados++;
-        } catch {
-          erros++;
-        }
+        } catch { erros++; }
       }
 
-      mostrarMensagem(
-        `📥 Lote importado: ${importados} registro${importados !== 1 ? 's' : ''} adicionado${importados !== 1 ? 's' : ''}${erros > 0 ? `, ${erros} com erro` : ''}.`
-      );
+      mostrarMensagem(`📥 ${importados} registro${importados !== 1 ? 's' : ''} importado${importados !== 1 ? 's' : ''} em ${unidadeImport}${erros > 0 ? `, ${erros} com erro` : ''}.`);
     } catch (err) {
-      console.error('Erro no upload em lote:', err);
-      mostrarMensagem('❌ Erro no upload em lote. Tente novamente.', 'erro');
+      mostrarMensagem('❌ Erro no upload em lote.', 'erro');
     } finally {
       setEnviandoLote(false);
     }
   };
 
+  // Filtra validades pela unidade selecionada para o dashboard
+  const validadesDaUnidade = validades.filter(v =>
+    unidade === 'Ambas' || !v.unidade || v.unidade === unidade
+  );
+
+  // --- Renderização condicional por estado de auth ---
+
+  if (!autenticado) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  if (!unidade) {
+    return <SelecionarUnidade onSelecionar={handleSelecionarUnidade} onSair={handleSair} />;
+  }
+
+  // Badge de cor da unidade no header
+  const unidadeCfg = {
+    Matriz:  { bg: '#2d5da1', label: '🏬 Matriz' },
+    Filial:  { bg: '#16a34a', label: '🏪 Filial' },
+    Ambas:   { bg: '#7c3aed', label: '🏬🏪 Ambas' },
+  }[unidade];
+
   return (
     <div style={{ minHeight: '100vh', paddingBottom: '60px' }}>
-      {/* Cabeçalho */}
+      {/* Header */}
       <header
         style={{
           background: '#2d2d2d',
           color: '#fdfbf7',
-          padding: '16px 20px',
+          padding: '12px 20px',
           display: 'flex',
           alignItems: 'center',
-          gap: '16px',
+          gap: '12px',
           position: 'sticky',
           top: 0,
           zIndex: 50,
           boxShadow: '0 4px 0px 0px rgba(45,45,45,0.5)',
+          flexWrap: 'wrap',
         }}
       >
-        <div>
-          <h1
-            style={{
-              fontFamily: "'Kalam', cursive",
-              fontSize: '22px',
-              margin: 0,
-              lineHeight: 1.2,
-            }}
-          >
+        <div style={{ flex: 1 }}>
+          <h1 style={{ fontFamily: "'Kalam', cursive", fontSize: '20px', margin: 0, lineHeight: 1.2 }}>
             ✏️ Validades do Estoque
           </h1>
-          <p
-            style={{
-              fontFamily: "'Patrick Hand', cursive",
-              fontSize: '13px',
-              margin: 0,
-              opacity: 0.7,
-            }}
-          >
-            Grupo Alcina Maria — Grupo Boticário / Alagoas
+          <p style={{ fontFamily: "'Patrick Hand', cursive", fontSize: '12px', margin: 0, opacity: 0.6 }}>
+            Grupo Alcina Maria — Boticário / AL
           </p>
         </div>
 
+        {/* Badge da unidade */}
+        <span
+          style={{
+            background: unidadeCfg.bg,
+            border: '2px solid rgba(255,255,255,0.3)',
+            borderRadius: '255px 8px 225px 8px / 8px 225px 8px 255px',
+            padding: '4px 12px',
+            fontFamily: "'Kalam', cursive",
+            fontSize: '14px',
+            color: '#fff',
+          }}
+        >
+          {unidadeCfg.label}
+        </span>
+
+        {/* Botão trocar unidade */}
+        <button
+          onClick={handleTrocarUnidade}
+          title="Trocar unidade"
+          style={{
+            padding: '5px 12px',
+            fontFamily: "'Patrick Hand', cursive",
+            fontSize: '13px',
+            background: 'rgba(255,255,255,0.1)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: '8px',
+            color: '#fdfbf7',
+            cursor: 'pointer',
+          }}
+        >
+          🔄 Unidade
+        </button>
+
+        {/* Botão sair */}
+        <button
+          onClick={handleSair}
+          title="Sair"
+          style={{
+            padding: '5px 12px',
+            fontFamily: "'Patrick Hand', cursive",
+            fontSize: '13px',
+            background: 'rgba(255,77,77,0.2)',
+            border: '1px solid rgba(255,77,77,0.5)',
+            borderRadius: '8px',
+            color: '#fca5a5',
+            cursor: 'pointer',
+          }}
+        >
+          Sair
+        </button>
+
         {carregando && (
-          <span
-            style={{
-              fontFamily: "'Patrick Hand', cursive",
-              fontSize: '13px',
-              opacity: 0.6,
-              marginLeft: 'auto',
-            }}
-          >
-            ⏳ Carregando...
+          <span style={{ fontFamily: "'Patrick Hand', cursive", fontSize: '12px', opacity: 0.5 }}>
+            ⏳
           </span>
         )}
       </header>
 
-      {/* Toast de feedback */}
+      {/* Toast */}
       {mensagem && (
         <div
           className="slide-in"
@@ -243,8 +318,8 @@ export default function App() {
             boxShadow: `4px 4px 0px 0px ${mensagem.tipo === 'erro' ? '#ef4444' : '#22c55e'}`,
             padding: '12px 20px',
             fontFamily: "'Patrick Hand', cursive",
-            fontSize: '15px',
-            maxWidth: '380px',
+            fontSize: '14px',
+            maxWidth: '360px',
             color: '#2d2d2d',
           }}
         >
@@ -254,22 +329,19 @@ export default function App() {
 
       {/* Conteúdo principal */}
       <main style={{ maxWidth: '900px', margin: '0 auto', padding: '24px 16px' }}>
-
-        {/* Dashboard de resumo */}
         {!carregando && (
           <DashboardCards
-            validades={validades}
+            validades={validadesDaUnidade}
             filtroStatus={filtroStatus}
             setFiltroStatus={setFiltroStatus}
           />
         )}
 
-        {/* Linha tracejada */}
         <div style={{ borderTop: '2px dashed #e5e0d8', margin: '24px 0' }} />
 
-        {/* Seção de entrada de produto */}
+        {/* Seção de cadastro */}
         <section style={{ marginBottom: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+          <div style={{ marginBottom: '24px' }}>
             <span
               style={{
                 background: '#fff9c4',
@@ -285,22 +357,18 @@ export default function App() {
             </span>
           </div>
 
-          {/* SKU Input — fica visível quando o formulário não está aberto */}
           {!mostrarForm && (
             <div style={{ marginTop: '40px' }}>
               <SKUInput
                 onProdutoEncontrado={handleProdutoEncontrado}
                 onNovoProduto={handleNovoProduto}
               />
-
-              {/* Upload em lote */}
               <div style={{ marginTop: '16px' }}>
                 <BulkUpload onUpload={handleBulkUpload} enviando={enviandoLote} />
               </div>
             </div>
           )}
 
-          {/* Formulário de validade (produto encontrado ou novo) */}
           {mostrarForm && (
             <ProductForm
               sku={skuAtual}
@@ -308,14 +376,14 @@ export default function App() {
               onSalvar={handleSalvar}
               onCancelar={handleCancelar}
               salvando={salvando}
+              unidade={unidade}
             />
           )}
         </section>
 
-        {/* Linha tracejada */}
         <div style={{ borderTop: '2px dashed #e5e0d8', margin: '24px 0' }} />
 
-        {/* Lista de validades */}
+        {/* Lista */}
         <section>
           <ValidadeList
             validades={validades}
@@ -324,6 +392,7 @@ export default function App() {
             filtroStatus={filtroStatus}
             setFiltroStatus={setFiltroStatus}
             onDeletar={handleDeletar}
+            unidade={unidade}
           />
         </section>
       </main>

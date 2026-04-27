@@ -1,0 +1,237 @@
+import React, { useState } from 'react';
+
+// PINs de acesso por unidade
+const PINS = {
+  '1048': 'Matriz',
+  '1515': 'Filial',
+  '7776': 'Ambas',
+};
+
+export default function SelecionarUnidade({ onSelecionar, onSair }) {
+  const [codigo, setCodigo] = useState('');
+  const [erro, setErro] = useState('');
+  const [carregando, setCarregando] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setErro('');
+    setCarregando(true);
+
+    setTimeout(() => {
+      const unidade = PINS[codigo.trim()];
+      if (unidade) {
+        onSelecionar(unidade);
+      } else {
+        setErro('Código inválido. Tente novamente.');
+        setCodigo('');
+      }
+      setCarregando(false);
+    }, 400);
+  };
+
+  const handleChange = (e) => {
+    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+    setCodigo(val);
+    if (erro) setErro('');
+  };
+
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '420px',
+          background: '#fff',
+          border: '3px solid #2d2d2d',
+          borderRadius: '15px 225px 15px 255px / 225px 15px 255px 15px',
+          boxShadow: '6px 6px 0px 0px #2d5da1',
+          padding: '40px 32px',
+          position: 'relative',
+        }}
+      >
+        {/* Tachinha decorativa */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '-10px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '20px',
+            height: '20px',
+            background: '#ff4d4d',
+            borderRadius: '50%',
+            border: '2px solid #2d2d2d',
+            boxShadow: '1px 1px 0px 0px #2d2d2d',
+          }}
+        />
+
+        {/* Título */}
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <div style={{ fontSize: '40px' }}>🏪</div>
+          <h2
+            style={{
+              fontFamily: "'Kalam', cursive",
+              fontSize: '24px',
+              margin: '8px 0 4px',
+              color: '#2d2d2d',
+            }}
+          >
+            Selecionar Unidade
+          </h2>
+          <p
+            style={{
+              fontFamily: "'Patrick Hand', cursive",
+              fontSize: '14px',
+              color: '#6b7280',
+              margin: 0,
+            }}
+          >
+            Digite o código da sua unidade
+          </p>
+        </div>
+
+        {/* Cards informativos */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '10px',
+            marginBottom: '20px',
+          }}
+        >
+          {[
+            { nome: 'Matriz', pin: '1048', cor: '#2d5da1', bg: '#dbeafe', emoji: '🏬' },
+            { nome: 'Filial', pin: '1515', cor: '#16a34a', bg: '#d1fae5', emoji: '🏪' },
+          ].map(u => (
+            <div
+              key={u.nome}
+              style={{
+                background: u.bg,
+                border: `2px solid ${u.cor}`,
+                borderRadius: '255px 8px 225px 8px / 8px 225px 8px 255px',
+                padding: '12px',
+                textAlign: 'center',
+                cursor: 'pointer',
+              }}
+              onClick={() => { setCodigo(u.pin); setErro(''); }}
+            >
+              <div style={{ fontSize: '22px' }}>{u.emoji}</div>
+              <div
+                style={{
+                  fontFamily: "'Kalam', cursive",
+                  fontSize: '16px',
+                  color: u.cor,
+                  fontWeight: 700,
+                }}
+              >
+                {u.nome}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ borderTop: '2px dashed #e5e0d8', marginBottom: '20px' }} />
+
+        {/* Input do código */}
+        <form onSubmit={handleSubmit}>
+          <label
+            style={{
+              display: 'block',
+              fontFamily: "'Kalam', cursive",
+              fontSize: '15px',
+              marginBottom: '8px',
+            }}
+          >
+            🔢 Código de acesso
+          </label>
+          <input
+            type="password"
+            inputMode="numeric"
+            value={codigo}
+            onChange={handleChange}
+            placeholder="····"
+            maxLength={4}
+            autoFocus
+            style={{
+              width: '100%',
+              padding: '14px',
+              fontFamily: "'Kalam', cursive",
+              fontSize: '28px',
+              letterSpacing: '8px',
+              textAlign: 'center',
+              border: `2px solid ${erro ? '#ef4444' : '#2d2d2d'}`,
+              borderRadius: '15px 225px 15px 255px / 225px 15px 255px 15px',
+              boxShadow: `3px 3px 0px 0px ${erro ? '#ef4444' : '#2d2d2d'}`,
+              background: '#fff',
+              outline: 'none',
+              marginBottom: '8px',
+            }}
+          />
+
+          {erro && (
+            <p
+              style={{
+                fontFamily: "'Patrick Hand', cursive",
+                color: '#ef4444',
+                fontSize: '13px',
+                textAlign: 'center',
+                marginBottom: '12px',
+              }}
+            >
+              ⚠️ {erro}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={carregando || codigo.length < 4}
+            style={{
+              width: '100%',
+              padding: '13px',
+              fontFamily: "'Kalam', cursive",
+              fontSize: '17px',
+              fontWeight: 700,
+              background: carregando || codigo.length < 4 ? '#e5e0d8' : '#2d2d2d',
+              color: '#fdfbf7',
+              border: '3px solid #2d2d2d',
+              borderRadius: '225px 15px 255px 15px / 15px 255px 15px 225px',
+              boxShadow: carregando || codigo.length < 4 ? 'none' : '4px 4px 0px 0px #2d5da1',
+              cursor: carregando || codigo.length < 4 ? 'not-allowed' : 'pointer',
+              transition: 'all 0.15s ease',
+              marginTop: '4px',
+            }}
+          >
+            {carregando ? '⏳...' : '✅ Confirmar'}
+          </button>
+        </form>
+
+        {/* Botão sair */}
+        <button
+          onClick={onSair}
+          style={{
+            marginTop: '16px',
+            width: '100%',
+            padding: '8px',
+            fontFamily: "'Patrick Hand', cursive",
+            fontSize: '14px',
+            background: 'none',
+            border: 'none',
+            color: '#9ca3af',
+            cursor: 'pointer',
+            textDecoration: 'underline',
+          }}
+        >
+          Sair / Trocar conta
+        </button>
+      </div>
+    </div>
+  );
+}
