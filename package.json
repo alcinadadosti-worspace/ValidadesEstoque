@@ -9,7 +9,7 @@
     "build": "cd client && npm run build && node scripts/copy-build.js",
     "start": "cd server && node index.js",
     "seed": "node seed/seed-firestore.js",
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install"
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install --include=dev"
   },
   "dependencies": {
     "better-sqlite3": "*",
