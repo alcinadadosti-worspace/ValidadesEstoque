@@ -84,6 +84,20 @@ export const MARCA_CORES = {
   'Aumigos':             { bg: '#d1fae5', border: '#065f46', texto: '#064e3b' },
 };
 
+// Detecta a marca pelo prefixo/palavra-chave da descrição do produto
+// Baseado nos padrões de nomenclatura do Grupo Boticário
+export function detectarMarca(descricao) {
+  if (!descricao) return 'O Boticário';
+  const d = descricao.toUpperCase().trim();
+
+  if (d.startsWith('OUI') || d.startsWith('O.U.I'))          return 'O.U.I';
+  if (d.startsWith('QDB') || d.includes('QUEM DISSE') || d.includes('BERENICE')) return 'Quem Disse, Berenice?';
+  if (d.startsWith('AU MIGOS') || d.startsWith('AUMIGOS') || d.startsWith('AU MIGO')) return 'Aumigos';
+  if (d.startsWith('EUDORA') || d.includes('EUDORA'))        return 'Eudora';
+
+  return 'O Boticário';
+}
+
 // Formata a data de validade para exibição
 export function formatarData(dataValidade) {
   let data;

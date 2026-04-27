@@ -13,6 +13,7 @@ import {
   getDoc,
 } from 'firebase/firestore';
 import { db } from './lib/firebase';
+import { detectarMarca } from './lib/validadeUtils';
 
 import Login from './components/Login';
 import SelecionarUnidade from './components/SelecionarUnidade';
@@ -176,9 +177,9 @@ export default function App() {
             // Produto cadastrado: usa nome e marca do Firestore
             ({ nome, marca } = prodSnap.data());
           } else {
-            // Produto novo: usa nome da planilha se disponível
+            // Produto novo: usa nome da planilha e detecta marca automaticamente
             nome = nomePlanilha || `Produto SKU ${sku}`;
-            marca = 'O Boticário';
+            marca = detectarMarca(nome);
             // Cadastra o produto no Firestore para reconhecimento futuro
             await setDoc(doc(db, 'produtos', sku), {
               sku, nome, marca,
