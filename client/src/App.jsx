@@ -4,6 +4,7 @@ import {
   onSnapshot,
   addDoc,
   deleteDoc,
+  updateDoc,
   doc,
   setDoc,
   serverTimestamp,
@@ -164,6 +165,20 @@ export default function App() {
     } catch (err) {
       console.error('Erro ao deletar:', err);
       mostrarMensagem('❌ Erro ao remover registro.', 'erro');
+    }
+  };
+
+  const handleDeletarParcial = async (id, qtdRemover, qtdTotal) => {
+    if (qtdRemover >= qtdTotal) {
+      await handleDeletar(id);
+      return;
+    }
+    try {
+      await updateDoc(doc(db, 'validades', id), { quantidade: qtdTotal - qtdRemover });
+      mostrarMensagem(`⬇️ ${qtdRemover} unidade(s) removida(s).`);
+    } catch (err) {
+      console.error('Erro ao atualizar quantidade:', err);
+      mostrarMensagem('❌ Erro ao atualizar quantidade.', 'erro');
     }
   };
 
@@ -517,6 +532,7 @@ export default function App() {
               filtroStatus={filtroStatus}
               setFiltroStatus={setFiltroStatus}
               onDeletar={handleDeletar}
+              onDeletarParcial={handleDeletarParcial}
               unidade={unidade}
             />
           </>

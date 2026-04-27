@@ -52,41 +52,43 @@ export default function SKUInput({ onProdutoEncontrado, onNovoProduto }) {
     <div style={{ position: 'relative' }}>
       {/* Seta desenhada à mão apontando para o input */}
       <svg
-        width="80"
-        height="60"
-        viewBox="0 0 80 60"
+        width="95"
+        height="58"
+        viewBox="0 0 95 58"
         style={{
           position: 'absolute',
-          top: '-52px',
-          left: '20px',
-          transform: 'rotate(-10deg)',
-          opacity: 0.7,
+          top: '-56px',
+          left: '12px',
+          transform: 'rotate(-8deg)',
+          opacity: 0.8,
+          pointerEvents: 'none',
         }}
       >
+        {/* Texto no topo — não sobrepõe o input */}
+        <text
+          x="3"
+          y="15"
+          style={{ fontFamily: "'Kalam', cursive", fontSize: '13px', fill: '#2d5da1' }}
+        >
+          Digite aqui!
+        </text>
+        {/* Seta curvada apontando para baixo */}
         <path
-          d="M10 50 C20 30, 50 20, 65 10"
+          d="M 57 17 C 63 33, 59 46, 52 55"
           stroke="#2d2d2d"
           strokeWidth="2.5"
           fill="none"
           strokeLinecap="round"
-          strokeDasharray="0"
         />
+        {/* Ponta da seta */}
         <path
-          d="M60 6 L68 14 L56 14 Z"
-          fill="#2d2d2d"
-          transform="rotate(30, 64, 10)"
+          d="M 44 51 L 52 58 L 59 51"
+          stroke="#2d2d2d"
+          strokeWidth="2.5"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
-        <text
-          x="5"
-          y="56"
-          style={{
-            fontFamily: "'Kalam', cursive",
-            fontSize: '11px',
-            fill: '#2d5da1',
-          }}
-        >
-          Digite aqui!
-        </text>
       </svg>
 
       <form onSubmit={handleBuscar} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
