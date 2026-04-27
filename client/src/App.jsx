@@ -23,6 +23,7 @@ import ProductForm from './components/ProductForm';
 import ValidadeList from './components/ValidadeList';
 import BulkUpload from './components/BulkUpload';
 import RevisarMarcasBulk from './components/RevisarMarcasBulk';
+import Analytics from './components/Analytics';
 
 export default function App() {
   // Estado de autenticação e unidade (persistido em localStorage)
@@ -45,6 +46,9 @@ export default function App() {
   // Filtros da lista
   const [filtroMarca, setFiltroMarca] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('');
+
+  // Aba ativa
+  const [abaAtiva, setAbaAtiva] = useState('registro');
 
   // Toast de feedback
   const [mensagem, setMensagem] = useState(null);
@@ -396,83 +400,133 @@ export default function App() {
         </div>
       )}
 
-      {/* Conteúdo principal */}
-      <main style={{ maxWidth: '900px', margin: '0 auto', padding: '24px 16px' }}>
-        {!carregando && (
-          <DashboardCards
-            validades={validadesDaUnidade}
-            filtroStatus={filtroStatus}
-            setFiltroStatus={setFiltroStatus}
-          />
-        )}
-
-        <div style={{ borderTop: '2px dashed #e5e0d8', margin: '24px 0' }} />
-
-        {/* Seção de cadastro */}
-        <section style={{ marginBottom: '32px' }}>
-          <div style={{ marginBottom: '24px' }}>
-            <span
+      {/* Navegação por abas */}
+      <nav
+        style={{
+          background: '#fdfbf7',
+          borderBottom: '2px solid #e5e0d8',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '8px',
+          padding: '10px 16px',
+          position: 'sticky',
+          top: '72px',
+          zIndex: 40,
+        }}
+      >
+        {[
+          { id: 'registro',   label: '📝 Registrar' },
+          { id: 'estoque',    label: '📦 Estoque'   },
+          { id: 'analytics',  label: '📊 Analytics' },
+        ].map(aba => {
+          const ativo = abaAtiva === aba.id;
+          return (
+            <button
+              key={aba.id}
+              onClick={() => setAbaAtiva(aba.id)}
               style={{
-                background: '#fff9c4',
-                border: '2px solid #2d2d2d',
-                borderRadius: '4px 255px 4px 255px / 255px 4px 255px 4px',
-                padding: '2px 12px',
-                fontFamily: "'Kalam', cursive",
-                fontSize: '18px',
-                boxShadow: '2px 2px 0px 0px #2d2d2d',
+                padding: '7px 18px',
+                fontFamily: ativo ? "'Kalam', cursive" : "'Patrick Hand', cursive",
+                fontSize: '14px',
+                fontWeight: ativo ? 700 : 400,
+                background: ativo ? '#2d2d2d' : '#fff',
+                color: ativo ? '#fdfbf7' : '#6b7280',
+                border: `2px solid ${ativo ? '#2d2d2d' : '#d1cdc7'}`,
+                borderRadius: '255px 8px 225px 8px / 8px 225px 8px 255px',
+                boxShadow: ativo ? '3px 3px 0px 0px rgba(45,45,45,0.3)' : 'none',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
               }}
             >
-              📝 Registrar Produto
-            </span>
-          </div>
+              {aba.label}
+            </button>
+          );
+        })}
+      </nav>
 
-          {/* Tela de revisão de marcas do upload em lote */}
-          {revisarMarcas && (
-            <RevisarMarcasBulk
-              itens={revisarMarcas.desconhecidos}
-              onConfirmar={handleConfirmarMarcas}
-              onCancelar={() => setRevisarMarcas(null)}
-            />
-          )}
+      {/* Conteúdo principal */}
+      <main style={{ maxWidth: '900px', margin: '0 auto', padding: '24px 16px' }}>
 
-          {!mostrarForm && !revisarMarcas && (
-            <div style={{ marginTop: '40px' }}>
-              <SKUInput
-                onProdutoEncontrado={handleProdutoEncontrado}
-                onNovoProduto={handleNovoProduto}
-              />
-              <div style={{ marginTop: '16px' }}>
-                <BulkUpload onUpload={handleBulkUpload} enviando={enviandoLote} />
-              </div>
+        {/* ── ABA REGISTRAR ─────────────────────────── */}
+        {abaAtiva === 'registro' && (
+          <section style={{ marginBottom: '32px' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <span
+                style={{
+                  background: '#fff9c4',
+                  border: '2px solid #2d2d2d',
+                  borderRadius: '4px 255px 4px 255px / 255px 4px 255px 4px',
+                  padding: '2px 12px',
+                  fontFamily: "'Kalam', cursive",
+                  fontSize: '18px',
+                  boxShadow: '2px 2px 0px 0px #2d2d2d',
+                }}
+              >
+                📝 Registrar Produto
+              </span>
             </div>
-          )}
 
-          {mostrarForm && !revisarMarcas && (
-            <ProductForm
-              sku={skuAtual}
-              produto={produtoAtual || null}
-              onSalvar={handleSalvar}
-              onCancelar={handleCancelar}
-              salvando={salvando}
+            {revisarMarcas && (
+              <RevisarMarcasBulk
+                itens={revisarMarcas.desconhecidos}
+                onConfirmar={handleConfirmarMarcas}
+                onCancelar={() => setRevisarMarcas(null)}
+              />
+            )}
+
+            {!mostrarForm && !revisarMarcas && (
+              <div style={{ marginTop: '40px' }}>
+                <SKUInput
+                  onProdutoEncontrado={handleProdutoEncontrado}
+                  onNovoProduto={handleNovoProduto}
+                />
+                <div style={{ marginTop: '16px' }}>
+                  <BulkUpload onUpload={handleBulkUpload} enviando={enviandoLote} />
+                </div>
+              </div>
+            )}
+
+            {mostrarForm && !revisarMarcas && (
+              <ProductForm
+                sku={skuAtual}
+                produto={produtoAtual || null}
+                onSalvar={handleSalvar}
+                onCancelar={handleCancelar}
+                salvando={salvando}
+                unidade={unidade}
+              />
+            )}
+          </section>
+        )}
+
+        {/* ── ABA ESTOQUE ───────────────────────────── */}
+        {abaAtiva === 'estoque' && (
+          <>
+            {!carregando && (
+              <DashboardCards
+                validades={validadesDaUnidade}
+                filtroStatus={filtroStatus}
+                setFiltroStatus={setFiltroStatus}
+              />
+            )}
+            <div style={{ borderTop: '2px dashed #e5e0d8', margin: '24px 0' }} />
+            <ValidadeList
+              validades={validades}
+              filtroMarca={filtroMarca}
+              setFiltroMarca={setFiltroMarca}
+              filtroStatus={filtroStatus}
+              setFiltroStatus={setFiltroStatus}
+              onDeletar={handleDeletar}
               unidade={unidade}
             />
-          )}
-        </section>
+          </>
+        )}
 
-        <div style={{ borderTop: '2px dashed #e5e0d8', margin: '24px 0' }} />
+        {/* ── ABA ANALYTICS ─────────────────────────── */}
+        {abaAtiva === 'analytics' && (
+          <Analytics validades={validades} unidade={unidade} />
+        )}
 
-        {/* Lista */}
-        <section>
-          <ValidadeList
-            validades={validades}
-            filtroMarca={filtroMarca}
-            setFiltroMarca={setFiltroMarca}
-            filtroStatus={filtroStatus}
-            setFiltroStatus={setFiltroStatus}
-            onDeletar={handleDeletar}
-            unidade={unidade}
-          />
-        </section>
       </main>
     </div>
   );
