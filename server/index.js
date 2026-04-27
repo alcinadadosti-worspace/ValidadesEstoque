@@ -39,6 +39,24 @@ app.get('/api/alertas/slack/testar', async (req, res) => {
   destinatarios ? ok('SLACK_DESTINATARIOS: ' + destinatarios)
                 : err('SLACK_DESTINATARIOS ausente no Render — adicione o ID do usuário');
 
+  const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+  if (b64) {
+    ok(`FIREBASE_SERVICE_ACCOUNT_BASE64: ${b64.length} chars`);
+    try {
+      const raw = Buffer.from(b64, 'base64').toString('utf8');
+      const fixed = raw.replace(
+        /-----BEGIN [A-Z ]+ KEY-----[\s\S]*?-----END [A-Z ]+ KEY-----\n?/g,
+        m => m.replace(/\n/g, '\\n')
+      );
+      JSON.parse(fixed);
+      ok('Base64 decodifica e parseia corretamente');
+    } catch (e) {
+      err('Base64 inválido: ' + e.message);
+    }
+  } else {
+    err('FIREBASE_SERVICE_ACCOUNT_BASE64 não configurado no Render');
+  }
+
   // Conta itens em alerta no Firestore
   try {
     const { getDb } = require('./lib/firebase-admin');

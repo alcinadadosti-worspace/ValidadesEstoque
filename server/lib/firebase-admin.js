@@ -10,8 +10,13 @@ function inicializar() {
 
   if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
     // Abordagem preferida: JSON completo em base64 (evita problemas com chave privada)
-    const json = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64').toString('utf8');
-    serviceAccount = JSON.parse(json);
+    const raw = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64').toString('utf8');
+    // Corrige newlines reais dentro do valor da chave privada (problema comum em alguns exportadores)
+    const fixed = raw.replace(
+      /-----BEGIN [A-Z ]+ KEY-----[\s\S]*?-----END [A-Z ]+ KEY-----\n?/g,
+      m => m.replace(/\n/g, '\\n')
+    );
+    serviceAccount = JSON.parse(fixed);
   } else {
     // Fallback: variáveis separadas
     const projectId   = process.env.FIREBASE_PROJECT_ID;
