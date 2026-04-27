@@ -61,10 +61,55 @@ app.get('/api/alertas/slack/testar', async (req, res) => {
     err('Firestore: ' + e.message);
   }
 
-  // Tenta enviar mesmo que não haja itens (modo diagnóstico envia mensagem de teste)
+  // Envia prévia com dados de exemplo para o usuário ver o formato real
   if (botToken && destinatarios) {
     try {
       const axios = require('axios');
+
+      const itensMock = [
+        { nome: 'HOME SPRAY INTENSE 200ML',         sku: '57207', quantidade: 12, marca: 'O Boticário',          unidade: 'Matriz', dias: 5,  mes: '04/2026' },
+        { nome: 'DESODORANTE LILY 75ML',             sku: '48391', quantidade: 6,  marca: 'Eudora',               unidade: 'Filial', dias: 18, mes: '04/2026' },
+        { nome: 'BATOM MATTE VELVET 3G',             sku: '61045', quantidade: 24, marca: 'Quem Disse, Berenice?', unidade: 'Matriz', dias: 32, mes: '05/2026' },
+        { nome: 'PERFUME OUI PARIS EDP 75ML',        sku: '72819', quantidade: 3,  marca: 'O.U.I',                unidade: 'Filial', dias: 47, mes: '05/2026' },
+        { nome: 'SHAMPOO CACHOS PERFEITOS 300ML',    sku: '39204', quantidade: 8,  marca: 'O Boticário',          unidade: 'Matriz', dias: 58, mes: '06/2026' },
+      ];
+
+      const emojiDias = d => (d === 0 ? '💀' : d <= 30 ? '🚨' : '⚠️');
+      const appUrl = process.env.APP_URL || 'https://validadesestoque.onrender.com';
+
+      const blocks = [
+        {
+          type: 'header',
+          text: { type: 'plain_text', text: '⚠️ Alerta de Validades — Grupo Alcina Maria', emoji: true },
+        },
+        {
+          type: 'section',
+          text: { type: 'mrkdwn', text: `*${itensMock.length} item(ns)* vencem nos próximos *60 dias*. Verifique o estoque!\n_🔔 Esta é uma prévia — o alerta real usará os dados reais do sistema._` },
+        },
+        { type: 'divider' },
+        ...itensMock.map(item => ({
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: [
+              `${emojiDias(item.dias)} *${item.nome}*`,
+              `SKU: \`${item.sku}\` · 📦 ${item.quantidade} un. · 📅 ${item.mes} · ${item.unidade === 'Matriz' ? '🏬 Matriz' : '🏪 Filial'}`,
+              `→ *${item.dias} dia(s)* restantes`,
+            ].join('\n'),
+          },
+        })),
+        { type: 'divider' },
+        {
+          type: 'actions',
+          elements: [{
+            type: 'button',
+            text: { type: 'plain_text', text: '📋 Ver no App', emoji: true },
+            style: 'primary',
+            url: appUrl,
+          }],
+        },
+      ];
+
       const ids = destinatarios.split(',').map(s => s.trim()).filter(Boolean);
       for (const userId of ids) {
         const openRes = await axios.post(
@@ -72,21 +117,14 @@ app.get('/api/alertas/slack/testar', async (req, res) => {
           { users: userId },
           { headers: { Authorization: `Bearer ${botToken}`, 'Content-Type': 'application/json' } }
         );
-        if (!openRes.data.ok) {
-          err(`conversations.open para ${userId}: ${openRes.data.error}`);
-          continue;
-        }
-        const channelId = openRes.data.channel.id;
+        if (!openRes.data.ok) { err(`conversations.open para ${userId}: ${openRes.data.error}`); continue; }
         const msgRes = await axios.post(
           'https://slack.com/api/chat.postMessage',
-          {
-            channel: channelId,
-            text: '🔔 *Teste do bot de validades — Grupo Alcina Maria*\nSe você recebeu essa mensagem, o bot está funcionando! O alerta real será enviado todo dia às 8h.',
-          },
+          { channel: openRes.data.channel.id, blocks },
           { headers: { Authorization: `Bearer ${botToken}`, 'Content-Type': 'application/json' } }
         );
         msgRes.data.ok
-          ? ok(`Mensagem de teste enviada para ${userId}`)
+          ? ok(`Prévia enviada para ${userId}`)
           : err(`chat.postMessage para ${userId}: ${msgRes.data.error}`);
       }
     } catch (e) {
