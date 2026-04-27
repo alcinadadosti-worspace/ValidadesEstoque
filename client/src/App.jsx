@@ -22,6 +22,7 @@ import SKUInput from './components/SKUInput';
 import ProductForm from './components/ProductForm';
 import ValidadeList from './components/ValidadeList';
 import BulkUpload from './components/BulkUpload';
+import RevisarMarcasBulk from './components/RevisarMarcasBulk';
 
 export default function App() {
   // Estado de autenticação e unidade (persistido em localStorage)
@@ -38,6 +39,8 @@ export default function App() {
   const [mostrarForm, setMostrarForm] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [enviandoLote, setEnviandoLote] = useState(false);
+  // Produtos do lote que precisam de revisão de marca (não encontrados no Firestore)
+  const [revisarMarcas, setRevisarMarcas] = useState(null); // { desconhecidos[], conhecidos[] }
 
   // Filtros da lista
   const [filtroMarca, setFiltroMarca] = useState('');
@@ -160,27 +163,61 @@ export default function App() {
     }
   };
 
+  // Etapa 1: recebe itens da planilha, verifica Firestore e separa conhecidos de desconhecidos
   const handleBulkUpload = async (itens) => {
     setEnviandoLote(true);
+    try {
+      const conhecidos = [];
+      const desconhecidos = [];
+
+      for (const item of itens) {
+        const prodSnap = await getDoc(doc(db, 'produtos', item.sku));
+        if (prodSnap.exists()) {
+          const { nome, marca } = prodSnap.data();
+          conhecidos.push({ ...item, nome, marca });
+        } else {
+          // Nome da planilha + marca sugerida automaticamente
+          desconhecidos.push({
+            ...item,
+            nome: item.nome || `Produto SKU ${item.sku}`,
+          });
+        }
+      }
+
+      if (desconhecidos.length > 0) {
+        // Há produtos novos → abre tela de revisão de marcas
+        setRevisarMarcas({ conhecidos, desconhecidos });
+      } else {
+        // Todos conhecidos → importa direto
+        await salvarLote(conhecidos);
+      }
+    } catch (err) {
+      mostrarMensagem('❌ Erro ao verificar produtos. Tente novamente.', 'erro');
+    } finally {
+      setEnviandoLote(false);
+    }
+  };
+
+  // Etapa 2: usuário confirmou as marcas dos produtos novos → salva tudo
+  const handleConfirmarMarcas = async (desconhecidosComMarca) => {
+    setRevisarMarcas(null);
+    const todos = [...(revisarMarcas?.conhecidos || []), ...desconhecidosComMarca];
+    await salvarLote(todos);
+  };
+
+  // Grava todos os itens do lote no Firestore
+  const salvarLote = async (itens) => {
+    setEnviandoLote(true);
+    const unidadeImport = unidade !== 'Ambas' ? unidade : 'Matriz';
     let importados = 0;
     let erros = 0;
-    const unidadeImport = unidade !== 'Ambas' ? unidade : 'Matriz';
 
     try {
-      for (const { sku, nome: nomePlanilha, quantidade, dataValidade } of itens) {
+      for (const { sku, nome, marca, quantidade, dataValidade } of itens) {
         try {
-          // Busca o produto no Firestore para pegar marca
+          // Cadastra produto novo no Firestore para reconhecimento futuro
           const prodSnap = await getDoc(doc(db, 'produtos', sku));
-          let nome, marca;
-
-          if (prodSnap.exists()) {
-            // Produto cadastrado: usa nome e marca do Firestore
-            ({ nome, marca } = prodSnap.data());
-          } else {
-            // Produto novo: usa nome da planilha e detecta marca automaticamente
-            nome = nomePlanilha || `Produto SKU ${sku}`;
-            marca = detectarMarca(nome);
-            // Cadastra o produto no Firestore para reconhecimento futuro
+          if (!prodSnap.exists()) {
             await setDoc(doc(db, 'produtos', sku), {
               sku, nome, marca,
               criadoEm: serverTimestamp(),
@@ -188,9 +225,7 @@ export default function App() {
           }
 
           await addDoc(collection(db, 'validades'), {
-            sku,
-            nome,
-            marca,
+            sku, nome, marca,
             quantidade: Number(quantidade) || 1,
             unidade: unidadeImport,
             dataValidade: Timestamp.fromDate(new Date(dataValidade + 'T12:00:00')),
@@ -202,7 +237,7 @@ export default function App() {
 
       mostrarMensagem(`📥 ${importados} item${importados !== 1 ? 'ns' : ''} importado${importados !== 1 ? 's' : ''} em ${unidadeImport}${erros > 0 ? `, ${erros} com erro` : ''}.`);
     } catch (err) {
-      mostrarMensagem('❌ Erro no upload em lote.', 'erro');
+      mostrarMensagem('❌ Erro ao importar. Tente novamente.', 'erro');
     } finally {
       setEnviandoLote(false);
     }
@@ -391,7 +426,16 @@ export default function App() {
             </span>
           </div>
 
-          {!mostrarForm && (
+          {/* Tela de revisão de marcas do upload em lote */}
+          {revisarMarcas && (
+            <RevisarMarcasBulk
+              itens={revisarMarcas.desconhecidos}
+              onConfirmar={handleConfirmarMarcas}
+              onCancelar={() => setRevisarMarcas(null)}
+            />
+          )}
+
+          {!mostrarForm && !revisarMarcas && (
             <div style={{ marginTop: '40px' }}>
               <SKUInput
                 onProdutoEncontrado={handleProdutoEncontrado}
@@ -403,7 +447,7 @@ export default function App() {
             </div>
           )}
 
-          {mostrarForm && (
+          {mostrarForm && !revisarMarcas && (
             <ProductForm
               sku={skuAtual}
               produto={produtoAtual || null}
