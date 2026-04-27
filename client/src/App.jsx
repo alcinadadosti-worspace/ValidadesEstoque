@@ -236,9 +236,22 @@ export default function App() {
           flexWrap: 'wrap',
         }}
       >
+        {/* Logo no header */}
+        <img
+          src="/logo.png"
+          alt="AM"
+          style={{
+            width: '48px',
+            height: '48px',
+            objectFit: 'contain',
+            filter: 'brightness(0) invert(1) drop-shadow(0 0 4px rgba(255,255,255,0.3))',
+            transform: 'rotate(-4deg)',
+            flexShrink: 0,
+          }}
+        />
         <div style={{ flex: 1 }}>
           <h1 style={{ fontFamily: "'Kalam', cursive", fontSize: '20px', margin: 0, lineHeight: 1.2 }}>
-            ✏️ Validades do Estoque
+            Validades do Estoque
           </h1>
           <p style={{ fontFamily: "'Patrick Hand', cursive", fontSize: '12px', margin: 0, opacity: 0.6 }}>
             Grupo Alcina Maria — Boticário / AL

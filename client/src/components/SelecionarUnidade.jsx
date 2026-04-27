@@ -73,14 +73,25 @@ export default function SelecionarUnidade({ onSelecionar, onSair }) {
           }}
         />
 
-        {/* Título */}
+        {/* Logo + Título */}
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{ fontSize: '40px' }}>🏪</div>
+          <img
+            src="/logo.png"
+            alt="Grupo Alcina Maria"
+            style={{
+              width: '90px',
+              height: '90px',
+              objectFit: 'contain',
+              filter: 'drop-shadow(3px 4px 0px rgba(45,45,45,0.2))',
+              transform: 'rotate(2deg)',
+              marginBottom: '8px',
+            }}
+          />
           <h2
             style={{
               fontFamily: "'Kalam', cursive",
               fontSize: '24px',
-              margin: '8px 0 4px',
+              margin: '4px 0 4px',
               color: '#2d2d2d',
             }}
           >
