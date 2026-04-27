@@ -114,7 +114,11 @@ export default function BulkUpload({ onUpload, enviando }) {
   };
 
   const handleEnviar = () => {
-    if (preview.length > 0) onUpload(preview);
+    if (preview.length > 0) {
+      onUpload(preview);
+      handleLimpar();
+      setAberto(false);
+    }
   };
 
   const handleLimpar = () => {
