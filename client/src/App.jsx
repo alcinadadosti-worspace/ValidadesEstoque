@@ -236,19 +236,28 @@ export default function App() {
           flexWrap: 'wrap',
         }}
       >
-        {/* Logo no header */}
-        <img
-          src="/logo.png"
-          alt="AM"
+        {/* Logo no header — fundo branco para preservar as cores originais */}
+        <div
           style={{
-            width: '48px',
-            height: '48px',
-            objectFit: 'contain',
-            filter: 'brightness(0) invert(1) drop-shadow(0 0 4px rgba(255,255,255,0.3))',
+            background: '#fff',
+            borderRadius: '6px 20px 6px 20px',
+            padding: '3px',
+            boxShadow: '2px 2px 0px 0px rgba(255,255,255,0.2)',
             transform: 'rotate(-4deg)',
             flexShrink: 0,
           }}
-        />
+        >
+          <img
+            src="/logo.png"
+            alt="AM"
+            style={{
+              width: '42px',
+              height: '42px',
+              objectFit: 'contain',
+              display: 'block',
+            }}
+          />
+        </div>
         <div style={{ flex: 1 }}>
           <h1 style={{ fontFamily: "'Kalam', cursive", fontSize: '20px', margin: 0, lineHeight: 1.2 }}>
             Validades do Estoque
