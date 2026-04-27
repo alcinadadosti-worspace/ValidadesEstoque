@@ -166,20 +166,31 @@ export default function App() {
     const unidadeImport = unidade !== 'Ambas' ? unidade : 'Matriz';
 
     try {
-      for (const { sku, dataValidade } of itens) {
+      for (const { sku, nome: nomePlanilha, quantidade, dataValidade } of itens) {
         try {
+          // Busca o produto no Firestore para pegar marca
           const prodSnap = await getDoc(doc(db, 'produtos', sku));
           let nome, marca;
+
           if (prodSnap.exists()) {
+            // Produto cadastrado: usa nome e marca do Firestore
             ({ nome, marca } = prodSnap.data());
           } else {
-            nome = `Produto SKU ${sku}`;
+            // Produto novo: usa nome da planilha se disponível
+            nome = nomePlanilha || `Produto SKU ${sku}`;
             marca = 'O Boticário';
+            // Cadastra o produto no Firestore para reconhecimento futuro
+            await setDoc(doc(db, 'produtos', sku), {
+              sku, nome, marca,
+              criadoEm: serverTimestamp(),
+            });
           }
 
           await addDoc(collection(db, 'validades'), {
-            sku, nome, marca,
-            quantidade: 1,
+            sku,
+            nome,
+            marca,
+            quantidade: Number(quantidade) || 1,
             unidade: unidadeImport,
             dataValidade: Timestamp.fromDate(new Date(dataValidade + 'T12:00:00')),
             registradoEm: serverTimestamp(),
@@ -188,7 +199,7 @@ export default function App() {
         } catch { erros++; }
       }
 
-      mostrarMensagem(`📥 ${importados} registro${importados !== 1 ? 's' : ''} importado${importados !== 1 ? 's' : ''} em ${unidadeImport}${erros > 0 ? `, ${erros} com erro` : ''}.`);
+      mostrarMensagem(`📥 ${importados} item${importados !== 1 ? 'ns' : ''} importado${importados !== 1 ? 's' : ''} em ${unidadeImport}${erros > 0 ? `, ${erros} com erro` : ''}.`);
     } catch (err) {
       mostrarMensagem('❌ Erro no upload em lote.', 'erro');
     } finally {
