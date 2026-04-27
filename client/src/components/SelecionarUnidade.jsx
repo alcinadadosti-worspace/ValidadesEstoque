@@ -109,7 +109,7 @@ export default function SelecionarUnidade({ onSelecionar, onSair }) {
           </p>
         </div>
 
-        {/* Cards informativos */}
+        {/* Cards apenas informativos — sem ação ao clicar */}
         <div
           style={{
             display: 'grid',
@@ -119,8 +119,8 @@ export default function SelecionarUnidade({ onSelecionar, onSair }) {
           }}
         >
           {[
-            { nome: 'Matriz', pin: '1048', cor: '#2d5da1', bg: '#dbeafe', emoji: '🏬' },
-            { nome: 'Filial', pin: '1515', cor: '#16a34a', bg: '#d1fae5', emoji: '🏪' },
+            { nome: 'Matriz', cor: '#2d5da1', bg: '#dbeafe', emoji: '🏬' },
+            { nome: 'Filial', cor: '#16a34a', bg: '#d1fae5', emoji: '🏪' },
           ].map(u => (
             <div
               key={u.nome}
@@ -130,9 +130,8 @@ export default function SelecionarUnidade({ onSelecionar, onSair }) {
                 borderRadius: '255px 8px 225px 8px / 8px 225px 8px 255px',
                 padding: '12px',
                 textAlign: 'center',
-                cursor: 'pointer',
+                userSelect: 'none',
               }}
-              onClick={() => { setCodigo(u.pin); setErro(''); }}
             >
               <div style={{ fontSize: '22px' }}>{u.emoji}</div>
               <div
