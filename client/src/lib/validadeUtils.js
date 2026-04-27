@@ -20,7 +20,7 @@ export function calcularDiasRestantes(dataValidade) {
 
 // Retorna o identificador de status baseado nos dias restantes
 export function calcularStatus(diasRestantes) {
-  if (diasRestantes < 0) return 'vencido';
+  if (diasRestantes <= 0) return 'vencido';  // 0 = vence hoje = vencido
   if (diasRestantes <= 30) return 'critico';
   if (diasRestantes <= 60) return 'urgente';
   if (diasRestantes <= 120) return 'atencao';
@@ -98,7 +98,7 @@ export function detectarMarca(descricao) {
   return 'O Boticário';
 }
 
-// Formata a data de validade para exibição
+// Formata a data de validade para exibição (somente MM/AAAA — dia não existe no dado original)
 export function formatarData(dataValidade) {
   let data;
   if (dataValidade?.toDate) {
@@ -108,5 +108,5 @@ export function formatarData(dataValidade) {
   } else {
     data = new Date(dataValidade);
   }
-  return data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return data.toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' });
 }

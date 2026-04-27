@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 
-// Converte o formato MM-AA (ex: "07-26") para o último dia daquele mês (2026-07-31)
+// Converte o formato MM-AA (ex: "07-26") para o primeiro dia daquele mês (2026-07-01).
+// Validade "07/26" significa: vence quando julho chega — a partir de 01/07 o item é vencido.
 function parseMMAA(valor) {
   if (!valor) return null;
   const str = String(valor).trim();
@@ -13,9 +14,7 @@ function parseMMAA(valor) {
     const anoRaw = parseInt(match[2], 10);
     const ano = anoRaw < 100 ? 2000 + anoRaw : anoRaw;
     if (mes >= 1 && mes <= 12) {
-      // Último dia do mês (dia 0 do mês seguinte)
-      const ultimoDia = new Date(ano, mes, 0);
-      return ultimoDia;
+      return new Date(ano, mes - 1, 1); // primeiro dia do mês de validade
     }
   }
 
@@ -85,8 +84,11 @@ export default function BulkUpload({ onUpload, enviando }) {
             return;
           }
 
-          // Formata para YYYY-MM-DD para enviar ao Firebase
-          const dataISO = data.toISOString().split('T')[0];
+          // Formata para YYYY-MM-DD usando partes locais (evita deslocamento de fuso UTC)
+          const y = data.getFullYear();
+          const mo = String(data.getMonth() + 1).padStart(2, '0');
+          const d = String(data.getDate()).padStart(2, '0');
+          const dataISO = `${y}-${mo}-${d}`;
           validos.push({ sku, nome, quantidade: qtd, dataValidade: dataISO });
         });
 
