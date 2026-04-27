@@ -1,0 +1,22 @@
+{
+  "name": "app-validades-estoque",
+  "version": "1.0.0",
+  "description": "Controle de Validades de Estoque - Grupo Alcina Maria / Grupo Boticário",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build": "cd client && npm run build && node scripts/copy-build.js",
+    "start": "cd server && node index.js",
+    "seed": "node seed/seed-firestore.js",
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install"
+  },
+  "dependencies": {
+    "better-sqlite3": "*",
+    "dotenv": "^16.4.5",
+    "firebase-admin": "^12.1.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
