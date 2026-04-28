@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MARCAS, MARCA_CORES } from '../lib/validadeUtils';
+import { MARCAS, MARCA_CORES, UNIDADES, UNIDADE_CORES } from '../lib/validadeUtils';
 
 // Formulário de registro de validade com suporte a quantidade e unidade
 export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvando, unidade }) {
@@ -162,36 +162,23 @@ export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvan
           </>
         )}
 
-        {/* Unidade — só pergunta quando está visualizando as duas unidades */}
+        {/* Unidade — só pergunta quando está visualizando todas as unidades */}
         {unidade === 'Ambas' && (
           <div style={{ marginBottom: '14px' }}>
             <label style={{ display: 'block', fontFamily: "'Kalam', cursive", fontSize: '15px', marginBottom: '6px' }}>
               🏪 Cadastrar em qual unidade? *
             </label>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              {['Matriz', 'Filial'].map(u => (
-                <button
-                  key={u}
-                  type="button"
-                  onClick={() => setUnidadeItem(u)}
-                  style={{
-                    flex: 1,
-                    padding: '10px',
-                    fontFamily: "'Kalam', cursive",
-                    fontSize: '16px',
-                    background: unidadeItem === u ? '#2d5da1' : '#fff',
-                    color: unidadeItem === u ? '#fff' : '#2d5da1',
-                    border: '2px solid #2d5da1',
-                    borderRadius: '255px 8px 225px 8px / 8px 225px 8px 255px',
-                    boxShadow: unidadeItem === u ? '1px 1px 0 0 #2d5da1' : '3px 3px 0 0 #2d5da1',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {u === 'Matriz' ? '🏬' : '🏪'} {u}
-                </button>
+            <select
+              value={unidadeItem}
+              onChange={e => setUnidadeItem(e.target.value)}
+              style={{ ...estiloInput(false), appearance: 'none', cursor: 'pointer' }}
+            >
+              {UNIDADES.map(u => (
+                <option key={u} value={u}>
+                  {UNIDADE_CORES[u]?.emoji || '🏪'} {UNIDADE_CORES[u]?.label || u}
+                </option>
               ))}
-            </div>
+            </select>
           </div>
         )}
 

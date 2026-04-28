@@ -5,6 +5,7 @@ import {
   STATUS_CONFIG,
   MARCAS,
   MARCA_CORES,
+  UNIDADE_CORES,
   formatarData,
 } from '../lib/validadeUtils';
 
@@ -293,11 +294,11 @@ export default function Analytics({ validades, unidade }) {
   );
 
   const stats = useMemo(() => {
-    const porStatus = { ok: 0, atencao: 0, urgente: 0, critico: 0, vencido: 0 };
-    const qtdPorStatus = { ok: 0, atencao: 0, urgente: 0, critico: 0, vencido: 0 };
+    const emptyStatus = () => ({ ok: 0, bom: 0, atencao: 0, critico: 0, vencido: 0 });
+    const porStatus = emptyStatus();
+    const qtdPorStatus = emptyStatus();
     const porMarca = {};
-    const matrizPorStatus = { ok: 0, atencao: 0, urgente: 0, critico: 0, vencido: 0 };
-    const filialPorStatus = { ok: 0, atencao: 0, urgente: 0, critico: 0, vencido: 0 };
+    const porUnidade = {};
     let totalQtd = 0;
     const criticos = [], vencidos = [];
 
@@ -314,9 +315,10 @@ export default function Analytics({ validades, unidade }) {
       porMarca[v.marca].count++;
       porMarca[v.marca].qtd += qtd;
 
-      if (unidade === 'Ambas') {
-        if (v.unidade === 'Matriz') matrizPorStatus[status]++;
-        else if (v.unidade === 'Filial') filialPorStatus[status]++;
+      if (unidade === 'Ambas' && v.unidade) {
+        if (!porUnidade[v.unidade]) porUnidade[v.unidade] = { ...emptyStatus(), total: 0 };
+        porUnidade[v.unidade][status]++;
+        porUnidade[v.unidade].total++;
       }
 
       if (status === 'critico') criticos.push({ ...v, dias });
@@ -325,7 +327,7 @@ export default function Analytics({ validades, unidade }) {
 
     criticos.sort((a, b) => a.dias - b.dias);
 
-    return { total: dadosFiltrados.length, totalQtd, porStatus, qtdPorStatus, porMarca, matrizPorStatus, filialPorStatus, criticos, vencidos };
+    return { total: dadosFiltrados.length, totalQtd, porStatus, qtdPorStatus, porMarca, porUnidade, criticos, vencidos };
   }, [dadosFiltrados, unidade]);
 
   // Calendário de vencimentos: próximos 12 meses
@@ -357,8 +359,6 @@ export default function Analytics({ validades, unidade }) {
     return meses;
   }, [dadosFiltrados]);
 
-  const totalMatriz = unidade === 'Ambas' ? validades.filter(v => v.unidade === 'Matriz').length : 0;
-  const totalFilial = unidade === 'Ambas' ? validades.filter(v => v.unidade === 'Filial').length : 0;
 
   if (dadosFiltrados.length === 0) {
     return (
@@ -498,46 +498,46 @@ export default function Analytics({ validades, unidade }) {
         </div>
       </section>
 
-      {/* ── COMPARATIVO MATRIZ VS FILIAL ─────────────────────────── */}
-      {unidade === 'Ambas' && (
+      {/* ── COMPARATIVO POR UNIDADE ──────────────────────────────── */}
+      {unidade === 'Ambas' && Object.keys(stats.porUnidade).length > 0 && (
         <section>
-          <Etiqueta texto="🏬🏪 Matriz vs Filial" />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            {[
-              { label: 'Matriz', emoji: '🏬', cor: '#2d5da1', bg: '#dbeafe', dados: stats.matrizPorStatus, total: totalMatriz },
-              { label: 'Filial', emoji: '🏪', cor: '#16a34a', bg: '#d1fae5', dados: stats.filialPorStatus, total: totalFilial },
-            ].map(u => (
-              <div key={u.label} style={{
-                background: '#fff', border: `2px solid ${u.cor}`,
-                borderRadius: '255px 15px 225px 15px / 15px 225px 15px 255px',
-                boxShadow: `4px 4px 0px 0px ${u.cor}`, padding: '18px',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-                  <span style={{ fontSize: '22px' }}>{u.emoji}</span>
-                  <span style={{ fontFamily: "'Kalam', cursive", fontSize: '20px', color: u.cor }}>{u.label}</span>
-                  <span style={{
-                    marginLeft: 'auto', background: u.bg, border: `2px solid ${u.cor}`,
-                    borderRadius: '255px', padding: '1px 10px',
-                    fontFamily: "'Kalam', cursive", fontSize: '16px', color: u.cor,
-                  }}>
-                    {u.total} itens
-                  </span>
-                </div>
-                {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                  <div key={key} style={{ marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                      <span style={{ fontFamily: "'Patrick Hand', cursive", fontSize: '12px', color: cfg.cor }}>
-                        {cfg.emoji} {cfg.label}
-                      </span>
-                      <span style={{ fontFamily: "'Kalam', cursive", fontSize: '13px', color: cfg.cor }}>
-                        {u.dados[key]}
-                      </span>
-                    </div>
-                    <BarraProgresso valor={u.dados[key]} total={u.total} cor={cfg.cor} altura={18} />
+          <Etiqueta texto="🏪 Por Unidade" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+            {Object.entries(stats.porUnidade).map(([nomeUnidade, dados]) => {
+              const uc = UNIDADE_CORES[nomeUnidade] || { bg: '#f3f4f6', border: '#6b7280', texto: '#6b7280', emoji: '🏪', label: nomeUnidade };
+              return (
+                <div key={nomeUnidade} style={{
+                  background: '#fff', border: `2px solid ${uc.border}`,
+                  borderRadius: '255px 15px 225px 15px / 15px 225px 15px 255px',
+                  boxShadow: `4px 4px 0px 0px ${uc.border}`, padding: '18px',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                    <span style={{ fontSize: '22px' }}>{uc.emoji}</span>
+                    <span style={{ fontFamily: "'Kalam', cursive", fontSize: '17px', color: uc.border, flex: 1 }}>{uc.label}</span>
+                    <span style={{
+                      background: uc.bg, border: `2px solid ${uc.border}`,
+                      borderRadius: '255px', padding: '1px 10px',
+                      fontFamily: "'Kalam', cursive", fontSize: '15px', color: uc.border,
+                    }}>
+                      {dados.total} itens
+                    </span>
                   </div>
-                ))}
-              </div>
-            ))}
+                  {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                    <div key={key} style={{ marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                        <span style={{ fontFamily: "'Patrick Hand', cursive", fontSize: '12px', color: cfg.cor }}>
+                          {cfg.emoji} {cfg.label}
+                        </span>
+                        <span style={{ fontFamily: "'Kalam', cursive", fontSize: '13px', color: cfg.cor }}>
+                          {dados[key] || 0}
+                        </span>
+                      </div>
+                      <BarraProgresso valor={dados[key] || 0} total={dados.total} cor={cfg.cor} altura={18} />
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
@@ -568,7 +568,7 @@ export default function Analytics({ validades, unidade }) {
                   </span>
                   {unidade === 'Ambas' && item.unidade && (
                     <span style={{ fontFamily: "'Patrick Hand', cursive", fontSize: '11px', color: '#6b7280' }}>
-                      {item.unidade === 'Matriz' ? '🏬' : '🏪'} {item.unidade}
+                      {UNIDADE_CORES[item.unidade]?.emoji || '🏪'} {UNIDADE_CORES[item.unidade]?.label || item.unidade}
                     </span>
                   )}
                   <span style={{ fontFamily: "'Patrick Hand', cursive", fontSize: '12px', color: '#6b7280' }}>

@@ -14,7 +14,7 @@ import {
   getDoc,
 } from 'firebase/firestore';
 import { db } from './lib/firebase';
-import { detectarMarca } from './lib/validadeUtils';
+import { detectarMarca, UNIDADE_CORES } from './lib/validadeUtils';
 
 import Login from './components/Login';
 import SelecionarUnidade from './components/SelecionarUnidade';
@@ -298,11 +298,9 @@ export default function App() {
   }
 
   // Badge de cor da unidade no header
-  const unidadeCfg = {
-    Matriz:  { bg: '#2d5da1', label: '🏬 Matriz' },
-    Filial:  { bg: '#16a34a', label: '🏪 Filial' },
-    Ambas:   { bg: '#7c3aed', label: '🏬🏪 Ambas' },
-  }[unidade];
+  const unidadeCfg = unidade === 'Ambas'
+    ? { bg: '#7c3aed', label: '🏬🏪 Ambas' }
+    : { bg: UNIDADE_CORES[unidade]?.border || '#2d2d2d', label: `${UNIDADE_CORES[unidade]?.emoji || '🏪'} ${UNIDADE_CORES[unidade]?.label || unidade}` };
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: '60px' }}>

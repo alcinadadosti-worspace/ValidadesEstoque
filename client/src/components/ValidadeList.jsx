@@ -6,6 +6,7 @@ import {
   formatarData,
   MARCAS,
   MARCA_CORES,
+  UNIDADE_CORES,
 } from '../lib/validadeUtils';
 
 // Modal de exclusão (total ou parcial)
@@ -268,11 +269,7 @@ export default function ValidadeList({
           const corMarca = MARCA_CORES[item.marca] || { bg: '#f3f4f6', border: '#2d2d2d', texto: '#2d2d2d' };
           const isVencido = dias <= 0;
           const unidadeItem = item.unidade || '—';
-          const unidadeCor = unidadeItem === 'Matriz'
-            ? { bg: '#dbeafe', border: '#2d5da1', texto: '#1e3a8a' }
-            : unidadeItem === 'Filial'
-            ? { bg: '#d1fae5', border: '#065f46', texto: '#064e3b' }
-            : { bg: '#f3f4f6', border: '#6b7280', texto: '#6b7280' };
+          const unidadeCor = UNIDADE_CORES[unidadeItem] || { bg: '#f3f4f6', border: '#6b7280', texto: '#6b7280', emoji: '🏪', label: unidadeItem };
 
           return (
             <div
@@ -327,7 +324,7 @@ export default function ValidadeList({
                   padding: '1px 8px', fontFamily: "'Patrick Hand', cursive",
                   fontSize: '11px', color: unidadeCor.texto, whiteSpace: 'nowrap',
                 }}>
-                  {unidadeItem === 'Matriz' ? '🏬' : '🏪'} {unidadeItem}
+                  {unidadeCor.emoji} {unidadeCor.label}
                 </span>
               )}
 

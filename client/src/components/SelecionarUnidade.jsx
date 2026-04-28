@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
 
-// PINs de acesso por unidade
+// PINs de acesso por unidade (4 dígitos = legado, 5 dígitos = novas lojas)
 const PINS = {
-  '1048': 'Matriz',
-  '1515': 'Filial',
-  '7776': 'Ambas',
+  '1048':  'Matriz',
+  '1515':  'Filial',
+  '7776':  'Ambas',
+  '24668': 'Loja Palmeira',
+  '24669': 'Loja Penedo',
+  '24671': 'Loja Teotônio',
+  '24670': 'Loja Coruripe',
+  '24617': 'Loja Palmeira (Sustentável)',
 };
 
 export default function SelecionarUnidade({ onSelecionar, onSair }) {
@@ -30,7 +35,7 @@ export default function SelecionarUnidade({ onSelecionar, onSair }) {
   };
 
   const handleChange = (e) => {
-    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+    const val = e.target.value.replace(/\D/g, '').slice(0, 5);
     setCodigo(val);
     if (erro) setErro('');
   };
@@ -109,45 +114,6 @@ export default function SelecionarUnidade({ onSelecionar, onSair }) {
           </p>
         </div>
 
-        {/* Cards apenas informativos — sem ação ao clicar */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '10px',
-            marginBottom: '20px',
-          }}
-        >
-          {[
-            { nome: 'Matriz', cor: '#2d5da1', bg: '#dbeafe', emoji: '🏬' },
-            { nome: 'Filial', cor: '#16a34a', bg: '#d1fae5', emoji: '🏪' },
-          ].map(u => (
-            <div
-              key={u.nome}
-              style={{
-                background: u.bg,
-                border: `2px solid ${u.cor}`,
-                borderRadius: '255px 8px 225px 8px / 8px 225px 8px 255px',
-                padding: '12px',
-                textAlign: 'center',
-                userSelect: 'none',
-              }}
-            >
-              <div style={{ fontSize: '22px' }}>{u.emoji}</div>
-              <div
-                style={{
-                  fontFamily: "'Kalam', cursive",
-                  fontSize: '16px',
-                  color: u.cor,
-                  fontWeight: 700,
-                }}
-              >
-                {u.nome}
-              </div>
-            </div>
-          ))}
-        </div>
-
         <div style={{ borderTop: '2px dashed #e5e0d8', marginBottom: '20px' }} />
 
         {/* Input do código */}
@@ -168,7 +134,7 @@ export default function SelecionarUnidade({ onSelecionar, onSair }) {
             value={codigo}
             onChange={handleChange}
             placeholder="····"
-            maxLength={4}
+            maxLength={5}
             autoFocus
             style={{
               width: '100%',

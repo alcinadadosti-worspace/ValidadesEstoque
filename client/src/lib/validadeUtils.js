@@ -68,6 +68,30 @@ export const STATUS_CONFIG = {
   },
 };
 
+// Unidades do grupo
+export const UNIDADES = [
+  'Matriz',
+  'Filial',
+  'Loja Palmeira',
+  'Loja Penedo',
+  'Loja Teotônio',
+  'Loja Coruripe',
+  'Loja Palmeira (Sustentável)',
+];
+
+// Cores, emoji e label de exibição por unidade
+// 'Matriz'/'Filial' são chaves internas preservadas no Firestore;
+// label é o nome visível na interface.
+export const UNIDADE_CORES = {
+  'Matriz':                      { bg: '#dbeafe', border: '#2d5da1', texto: '#1e3a8a', emoji: '🏬', label: 'Vd Penedo' },
+  'Filial':                      { bg: '#d1fae5', border: '#065f46', texto: '#064e3b', emoji: '🏪', label: 'Vd Palmeira dos Índios' },
+  'Loja Palmeira':               { bg: '#ede9fe', border: '#6d28d9', texto: '#4c1d95', emoji: '🏪', label: 'Loja Palmeira' },
+  'Loja Penedo':                 { bg: '#fff7ed', border: '#c2410c', texto: '#9a3412', emoji: '🏪', label: 'Loja Penedo' },
+  'Loja Teotônio':               { bg: '#ccfbf1', border: '#0f766e', texto: '#134e4a', emoji: '🏪', label: 'Loja Teotônio' },
+  'Loja Coruripe':               { bg: '#fce7f3', border: '#be185d', texto: '#831843', emoji: '🏪', label: 'Loja Coruripe' },
+  'Loja Palmeira (Sustentável)': { bg: '#ecfccb', border: '#4d7c0f', texto: '#365314', emoji: '🌿', label: 'Loja Palmeira (Sustentável)' },
+};
+
 // Marcas disponíveis no sistema
 export const MARCAS = [
   'O Boticário',
