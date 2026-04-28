@@ -490,7 +490,7 @@ export default function App() {
             )}
 
             {!mostrarForm && !revisarMarcas && (
-              <div style={{ marginTop: '40px' }}>
+              <div style={{ marginTop: '72px' }}>
                 <SKUInput
                   onProdutoEncontrado={handleProdutoEncontrado}
                   onNovoProduto={handleNovoProduto}

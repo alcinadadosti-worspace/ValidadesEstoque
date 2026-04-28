@@ -19,11 +19,13 @@ export function calcularDiasRestantes(dataValidade) {
 }
 
 // Retorna o identificador de status baseado nos dias restantes
+// Regras: ≤ 90 dias (3 meses) = crítico, ≤ 180 dias (6 meses) = atenção,
+//         < 547 dias (18 meses) = bom, ≥ 547 dias = ok
 export function calcularStatus(diasRestantes) {
-  if (diasRestantes <= 0) return 'vencido';  // 0 = vence hoje = vencido
-  if (diasRestantes <= 30) return 'critico';
-  if (diasRestantes <= 60) return 'urgente';
-  if (diasRestantes <= 120) return 'atencao';
+  if (diasRestantes <= 0) return 'vencido';
+  if (diasRestantes <= 90) return 'critico';
+  if (diasRestantes <= 180) return 'atencao';
+  if (diasRestantes < 547) return 'bom';
   return 'ok';
 }
 
@@ -43,23 +45,23 @@ export const STATUS_CONFIG = {
     label: 'Críticos',
     emoji: '🚨',
   },
-  urgente: {
-    cor: '#f97316',
-    texto: 'Urgente',
-    bg: '#fff7ed',
-    label: 'Urgentes',
-    emoji: '⚠️',
-  },
   atencao: {
     cor: '#eab308',
     texto: 'Atenção',
     bg: '#fefce8',
     label: 'Atenção',
-    emoji: '👀',
+    emoji: '⚠️',
+  },
+  bom: {
+    cor: '#3b82f6',
+    texto: 'Em dia',
+    bg: '#eff6ff',
+    label: 'Em dia',
+    emoji: '🔵',
   },
   ok: {
     cor: '#22c55e',
-    texto: 'Válido',
+    texto: 'OK',
     bg: '#f0fdf4',
     label: 'OK',
     emoji: '✅',

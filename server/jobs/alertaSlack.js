@@ -49,7 +49,7 @@ async function enviarAlertaSlack() {
   const botToken      = process.env.SLACK_BOT_TOKEN;
   const destinatarios = process.env.SLACK_DESTINATARIOS;
   const appUrl        = process.env.APP_URL || 'https://validades.onrender.com';
-  const diasLimite    = parseInt(process.env.SLACK_DIAS_ALERTA || '60', 10);
+  const diasLimite    = parseInt(process.env.SLACK_DIAS_ALERTA || '180', 10);
 
   if (!botToken || !destinatarios) {
     console.log('[Slack] SLACK_BOT_TOKEN ou SLACK_DESTINATARIOS não configurados — pulando.');
@@ -82,7 +82,7 @@ async function enviarAlertaSlack() {
 
   emAlerta.sort((a, b) => a.dias - b.dias);
 
-  const emojiDias = d => (d === 0 ? '💀' : d <= 30 ? '🚨' : '⚠️');
+  const emojiDias = d => (d === 0 ? '💀' : d <= 90 ? '🚨' : '⚠️');
 
   const blocks = [
     {

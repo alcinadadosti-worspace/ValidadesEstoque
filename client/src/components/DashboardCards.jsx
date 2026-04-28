@@ -4,7 +4,7 @@ import { calcularDiasRestantes, calcularStatus, STATUS_CONFIG } from '../lib/val
 // Cards de resumo no topo da página — clicáveis para filtrar a lista
 export default function DashboardCards({ validades, filtroStatus, setFiltroStatus }) {
   const contagens = useMemo(() => {
-    const c = { total: 0, ok: 0, atencao: 0, urgente: 0, critico: 0, vencido: 0 };
+    const c = { total: 0, ok: 0, bom: 0, atencao: 0, critico: 0, vencido: 0 };
     validades.forEach(v => {
       c.total++;
       const dias = calcularDiasRestantes(v.dataValidade);
@@ -34,6 +34,15 @@ export default function DashboardCards({ validades, filtroStatus, setFiltroStatu
       rotate: 'rotate-1',
     },
     {
+      key: 'bom',
+      rotulo: STATUS_CONFIG.bom.label,
+      valor: contagens.bom,
+      cor: '#3b82f6',
+      bg: '#eff6ff',
+      emoji: STATUS_CONFIG.bom.emoji,
+      rotate: 'rotate-1',
+    },
+    {
       key: 'atencao',
       rotulo: STATUS_CONFIG.atencao.label,
       valor: contagens.atencao,
@@ -41,15 +50,6 @@ export default function DashboardCards({ validades, filtroStatus, setFiltroStatu
       bg: '#fefce8',
       emoji: STATUS_CONFIG.atencao.emoji,
       rotate: '-rotate-1',
-    },
-    {
-      key: 'urgente',
-      rotulo: STATUS_CONFIG.urgente.label,
-      valor: contagens.urgente,
-      cor: '#f97316',
-      bg: '#fff7ed',
-      emoji: STATUS_CONFIG.urgente.emoji,
-      rotate: 'rotate-1',
     },
     {
       key: 'critico',
