@@ -218,10 +218,10 @@ export default function ProductForm({ sku, produto, onSalvar, onCancelar, salvan
         {/* Data de validade */}
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', fontFamily: "'Kalam', cursive", fontSize: '15px', marginBottom: '6px' }}>
-            📅 Data de Validade *
+            📅 Validade (mês/ano) *
           </label>
           <input
-            type="date"
+            type="month"
             value={dataValidade}
             onChange={e => setDataValidade(e.target.value)}
             style={estiloInput(!!erros.dataValidade)}

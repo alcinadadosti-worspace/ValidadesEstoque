@@ -26,6 +26,12 @@ import BulkUpload from './components/BulkUpload';
 import RevisarMarcasBulk from './components/RevisarMarcasBulk';
 import Analytics from './components/Analytics';
 
+// Converte "YYYY-MM" (type="month") para o último dia daquele mês ao meio-dia
+function parsearDataValidade(valorMesAno) {
+  const [year, month] = valorMesAno.split('-').map(Number);
+  return new Date(year, month, 0, 12, 0, 0);
+}
+
 export default function App() {
   // Estado de autenticação e unidade (persistido em localStorage)
   const [autenticado, setAutenticado] = useState(() => localStorage.getItem('auth') === 'true');
@@ -132,17 +138,31 @@ export default function App() {
         });
       }
 
-      await addDoc(collection(db, 'validades'), {
-        sku,
-        nome,
-        marca,
-        quantidade: Number(quantidade) || 1,
-        unidade: unidadeItem,
-        dataValidade: Timestamp.fromDate(new Date(dataValidade + 'T12:00:00')),
-        registradoEm: serverTimestamp(),
+      // Verifica se já existe registro com mesmo SKU + unidade + mês/ano
+      const [year, month] = dataValidade.split('-').map(Number);
+      const registroExistente = validades.find(v => {
+        if (v.sku !== sku || v.unidade !== unidadeItem) return false;
+        const vDate = v.dataValidade?.toDate ? v.dataValidade.toDate() : new Date(v.dataValidade);
+        return vDate.getFullYear() === year && vDate.getMonth() + 1 === month;
       });
 
-      mostrarMensagem(`✅ "${nome}" — ${quantidade} un. registrado em ${unidadeItem}!`);
+      if (registroExistente) {
+        const novaQtd = (Number(registroExistente.quantidade) || 1) + Number(quantidade);
+        await updateDoc(doc(db, 'validades', registroExistente.id), { quantidade: novaQtd });
+        mostrarMensagem(`✅ "${nome}" — +${quantidade} un. somadas (total: ${novaQtd}) em ${unidadeItem}!`);
+      } else {
+        await addDoc(collection(db, 'validades'), {
+          sku,
+          nome,
+          marca,
+          quantidade: Number(quantidade) || 1,
+          unidade: unidadeItem,
+          dataValidade: Timestamp.fromDate(parsearDataValidade(dataValidade)),
+          registradoEm: serverTimestamp(),
+        });
+        mostrarMensagem(`✅ "${nome}" — ${quantidade} un. registrado em ${unidadeItem}!`);
+      }
+
       handleCancelar();
     } catch (err) {
       console.error('Erro ao salvar:', err);
