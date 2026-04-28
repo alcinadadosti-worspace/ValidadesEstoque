@@ -6,6 +6,7 @@ import {
   MARCAS,
   MARCA_CORES,
   UNIDADE_CORES,
+  UNIDADES,
   formatarData,
 } from '../lib/validadeUtils';
 
@@ -298,7 +299,10 @@ export default function Analytics({ validades, unidade }) {
     const porStatus = emptyStatus();
     const qtdPorStatus = emptyStatus();
     const porMarca = {};
-    const porUnidade = {};
+    // Inicializa todas as unidades com zero para garantir que apareçam mesmo sem dados
+    const porUnidade = unidade === 'Ambas'
+      ? Object.fromEntries(UNIDADES.map(u => [u, { ...emptyStatus(), total: 0 }]))
+      : {};
     let totalQtd = 0;
     const criticos = [], vencidos = [];
 
